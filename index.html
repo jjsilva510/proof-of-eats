@@ -936,6 +936,19 @@
                 <div class="empty-state">Connect your Nostr wallet to add restaurants</div>
             </div>
         </div>
+        
+        <!-- Relay Management -->
+        <div class="form-container">
+            <h3 style="margin: 20px 0 12px; font-size: 16px;">Nostr Relays</h3>
+            <p style="color: var(--text-light); font-size: 13px; margin-bottom: 12px;">Configure which relays to use for fetching profile data. The app will try relays in order until one succeeds.</p>
+            
+            <div id="relayList" style="margin-bottom: 12px;"></div>
+            
+            <div style="display: flex; gap: 8px;">
+                <input type="text" class="form-input" id="newRelayUrl" placeholder="wss://relay.example.com" style="flex: 1;">
+                <button class="submit-btn" onclick="handleAddRelay()" style="padding: 10px 16px;">Add</button>
+            </div>
+        </div>
     </div>
 
     <!-- Filters Modal -->
@@ -1016,6 +1029,17 @@
         let nostrPublicKey = null;
         let nostrRelay = null;
         let userProfile = null; // Store fetched profile data {name, picture, lud16, nip05}
+        
+        // Relay management
+        const DEFAULT_RELAYS = [
+            'wss://relay.primal.net',
+            'wss://nos.lol',
+            'wss://relay.damus.io',
+            'wss://nostr.wine',
+            'wss://relay.snort.social'
+        ];
+        let configuredRelays = [];
+        let activeRelayIndex = 0;
         let currentFilter = {
             tasteMin: 0,
             environMin: 0,
@@ -1177,6 +1201,7 @@
                 document.getElementById('searchInput').focus();
             } else if (page === 'profile') {
                 updateProfile();
+                renderRelayList();
             } else if (page === 'review') {
                 updateReviewLoginStatus();
             } else if (page === 'discover') {
@@ -1434,6 +1459,84 @@
             if (e.key === 'Enter') performSearch();
         });
 
+        // Relay Management
+        function initRelays() {
+            const saved = localStorage.getItem('nostr_relays');
+            if (saved) {
+                try {
+                    configuredRelays = JSON.parse(saved);
+                    if (configuredRelays.length === 0) {
+                        configuredRelays = [...DEFAULT_RELAYS];
+                    }
+                } catch (e) {
+                    configuredRelays = [...DEFAULT_RELAYS];
+                }
+            } else {
+                configuredRelays = [...DEFAULT_RELAYS];
+            }
+            console.log('Initialized relays:', configuredRelays);
+        }
+        
+        function getRelays() {
+            return [...configuredRelays];
+        }
+        
+        function addRelay(url) {
+            if (!url.startsWith('wss://') && !url.startsWith('ws://')) {
+                return { success: false, error: 'Relay URL must start with wss:// or ws://' };
+            }
+            if (configuredRelays.includes(url)) {
+                return { success: false, error: 'Relay already configured' };
+            }
+            configuredRelays.push(url);
+            localStorage.setItem('nostr_relays', JSON.stringify(configuredRelays));
+            console.log('Added relay:', url);
+            return { success: true };
+        }
+        
+        function removeRelay(url) {
+            const index = configuredRelays.indexOf(url);
+            if (index === -1) {
+                return { success: false, error: 'Relay not found' };
+            }
+            if (configuredRelays.length <= 1) {
+                return { success: false, error: 'Must have at least one relay' };
+            }
+            configuredRelays.splice(index, 1);
+            localStorage.setItem('nostr_relays', JSON.stringify(configuredRelays));
+            console.log('Removed relay:', url);
+            return { success: true };
+        }
+        
+        async function fetchProfileFromRelays(pubkey) {
+            // Try each relay in order until one succeeds
+            for (let i = 0; i < configuredRelays.length; i++) {
+                const relayUrl = configuredRelays[(activeRelayIndex + i) % configuredRelays.length];
+                console.log(`Trying relay: ${relayUrl}`);
+                try {
+                    const relay = await window.nostr.useRelay(relayUrl);
+                    const event = await relay.get({ kinds: [0], authors: [pubkey] });
+                    if (event) {
+                        const metadata = JSON.parse(event.content);
+                        activeRelayIndex = configuredRelays.indexOf(relayUrl);
+                        console.log(`Profile fetched from ${relayUrl}:`, metadata);
+                        return {
+                            name: metadata.display_name || metadata.name,
+                            picture: metadata.picture,
+                            lud16: metadata.lud16,
+                            nip05: metadata.nip05
+                        };
+                    }
+                } catch (e) {
+                    console.log(`Relay ${relayUrl} failed:`, e.message);
+                }
+            }
+            return null;
+        }
+        
+        // Initialize relays on app start
+        initRelays();
+        
         // Profile
         function updateProfile() {
             if (nostrPublicKey) {
@@ -1462,7 +1565,8 @@
                     lightningHtml = `<div style="font-size:12px;color:#666;margin-top:4px;">⚡ ${lightningAddr}</div>`;
                 }
                 
-                document.getElementById('profileLoginStatus').innerHTML = `<div class="connected-badge">✓ Connected to Nostr</div>${lightningHtml}`;
+                const profileName = userProfile?.name || `User ${nostrPublicKey.substring(0, 8)}`;
+                document.getElementById('profileLoginStatus').innerHTML = `<div class="connected-badge">✓ Connected as ${profileName}</div>${lightningHtml}<button class="logout-btn" onclick="disconnectNostr()" style="margin-top:8px;background:#666;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Disconnect</button>`;
                 document.getElementById('addRestaurantLoginStatus').innerHTML = '<div class="connected-badge">✓ Connected - You can add restaurants</div>';
                 document.getElementById('addRestaurantBtn').disabled = false;
                 
@@ -1576,24 +1680,15 @@
 
         // Nostr Integration
         async function fetchProfile(pubkey) {
-            try {
-                // Try Primal API first (faster, no relay connection needed)
-                const response = await fetch(`https://api.primal.net/v1/profile?pubkey=${pubkey}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data && data.profile) {
-                        const profile = data.profile;
-                        return {
-                            name: profile.display_name || profile.name,
-                            picture: profile.picture,
-                            lud16: profile.lud16,
-                            nip05: profile.nip05
-                        };
-                    }
-                }
-            } catch (e) {
-                console.log('Primal API fetch failed, trying relay:', e);
+            console.log('Fetching profile for pubkey:', pubkey);
+            const result = await fetchProfileFromRelays(pubkey);
+            if (result) {
+                console.log('Profile fetched successfully:', result);
+            } else {
+                console.log('All relays failed to fetch profile');
             }
+            return result;
+        }
             
             // Fallback: fetch from relay using nostr-tools
             try {
@@ -1616,6 +1711,19 @@
         }
 
         async function checkNostrConnection() {
+            // Check localStorage for cached session
+            const cachedPubkey = localStorage.getItem('nostr_pubkey');
+            const cachedProfile = localStorage.getItem('nostr_profile');
+            
+            if (cachedPubkey && cachedProfile) {
+                console.log('Restoring cached Nostr session');
+                nostrPublicKey = cachedPubkey;
+                userProfile = JSON.parse(cachedProfile);
+                updateProfile();
+                updateReviewLoginStatus();
+                return;
+            }
+            
             if (window.nostr) {
                 try {
                     nostrPublicKey = await window.nostr.getPublicKey();
@@ -1636,12 +1744,76 @@
             try {
                 nostrPublicKey = await window.nostr.getPublicKey();
                 userProfile = await fetchProfile(nostrPublicKey);
+                
+                // Cache to localStorage for persistence
+                localStorage.setItem('nostr_pubkey', nostrPublicKey);
+                localStorage.setItem('nostr_profile', JSON.stringify(userProfile));
+                
                 updateProfile();
                 updateReviewLoginStatus();
                 const profileName = userProfile?.name ? userProfile.name : 'Nostr';
                 alert(`Connected to ${profileName}!`);
             } catch (e) {
                 alert('Failed to connect: ' + e.message);
+            }
+        }
+
+        function disconnectNostr() {
+            localStorage.removeItem('nostr_pubkey');
+            localStorage.removeItem('nostr_profile');
+            nostrPublicKey = null;
+            userProfile = null;
+            updateProfile();
+            updateReviewLoginStatus();
+            alert('Disconnected from Nostr');
+        }
+        
+        function renderRelayList() {
+            const container = document.getElementById('relayList');
+            if (!container) return;
+            
+            if (configuredRelays.length === 0) {
+                container.innerHTML = '<div class="empty-state">No relays configured</div>';
+                return;
+            }
+            
+            container.innerHTML = configuredRelays.map((relay, index) => `
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: white; border-radius: 6px; margin-bottom: 6px; border: 1px solid #eee;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 12px; color: var(--text-muted);">#${index + 1}</span>
+                        <span style="font-size: 13px; color: var(--text-dark); word-break: break-all;">${relay}</span>
+                    </div>
+                    <button onclick="handleRemoveRelay('${relay}')" style="background: #ff4444; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">Remove</button>
+                </div>
+            `).join('');
+        }
+        
+        function handleAddRelay() {
+            const input = document.getElementById('newRelayUrl');
+            const url = input.value.trim();
+            
+            if (!url) {
+                alert('Please enter a relay URL');
+                return;
+            }
+            
+            const result = addRelay(url);
+            if (result.success) {
+                input.value = '';
+                renderRelayList();
+                alert(`Relay added: ${url}`);
+            } else {
+                alert(result.error);
+            }
+        }
+        
+        function handleRemoveRelay(url) {
+            const result = removeRelay(url);
+            if (result.success) {
+                renderRelayList();
+                alert(`Relay removed: ${url}`);
+            } else {
+                alert(result.error);
             }
         }
 
