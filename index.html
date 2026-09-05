@@ -743,6 +743,70 @@
                 margin: 12px 0;
             }
         }
+
+        /* Settings / identity */
+        .settings-card {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .settings-card h3 {
+            margin: 0 0 4px;
+            font-size: 15px;
+        }
+        .settings-card .sub {
+            color: var(--text-light);
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-secondary {
+            background: #fff;
+            color: var(--primary-red);
+            border: 1px solid var(--primary-red);
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-secondary:hover {
+            background: #fff5f5;
+        }
+        .key-box {
+            background: #f7f7f7;
+            border: 1px dashed #ccc;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+            color: #333;
+        }
+        .badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #eee;
+            color: #445;
+            white-space: nowrap;
+        }
+        .cta-banner {
+            background: #fff7e6;
+            border: 1px solid #ffe0a3;
+            padding: 14px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
     </style>
     <!-- Nostr Tools for fetching profile data -->
     <script src="https://cdn.jsdelivr.net/npm/nostr-tools@2.1.0/lib/nostr.bundle.js"></script>
@@ -937,16 +1001,68 @@
             </div>
         </div>
         
-        <!-- Relay Management -->
         <div class="form-container">
-            <h3 style="margin: 20px 0 12px; font-size: 16px;">Nostr Relays</h3>
-            <p style="color: var(--text-light); font-size: 13px; margin-bottom: 12px;">Configure which relays to use for fetching profile data. The app will try relays in order until one succeeds.</p>
-            
-            <div id="relayList" style="margin-bottom: 12px;"></div>
-            
-            <div style="display: flex; gap: 8px;">
-                <input type="text" class="form-input" id="newRelayUrl" placeholder="wss://relay.example.com" style="flex: 1;">
-                <button class="submit-btn" onclick="handleAddRelay()" style="padding: 10px 16px;">Add</button>
+            <div class="settings-card" style="text-align:center;color:var(--text-light);font-size:13px;">
+                Relays, private key backup &amp; more live in <b>Settings</b>.
+                <div style="margin-top:8px;"><button class="btn-secondary" onclick="navigateTo('settings')">Open Settings</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div class="page" id="settingsPage">
+        <div class="form-container">
+            <div class="settings-card">
+                <h3>Identity</h3>
+                <div class="sub">How the app signs your check-ins &amp; reviews.</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+                    <span id="settingsIdentityName" style="font-weight:600;">Not signed in</span>
+                    <span class="badge" id="settingsMode">—</span>
+                </div>
+                <div style="margin-top:10px;font-size:12px;color:var(--text-light);">Public key (share this):</div>
+                <div class="key-box" id="settingsNpub">—</div>
+                <div class="btn-row">
+                    <button class="btn-secondary" onclick="copyNpub()">Copy public key</button>
+                    <button class="btn-secondary" onclick="revealSecretKey()">Reveal private key</button>
+                    <button class="btn-secondary" onclick="copySecretKey()">Copy private key</button>
+                </div>
+                <div style="margin-top:6px;font-size:12px;color:var(--text-muted);" id="settingsKeyStatus"></div>
+                <div class="key-box" id="settingsNsec" style="display:none;"></div>
+                <div class="btn-row">
+                    <button class="btn-secondary" onclick="disconnectNostr()" style="color:#c00;border-color:#f0a8a8;">Sign out / remove key</button>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h3>Import existing key</h3>
+                <div class="sub">Restore an identity created elsewhere — paste your nsec1… (or 64-char hex) key. Useful when moving to a new device or browser.</div>
+                <textarea class="form-textarea" id="importKeyInput" placeholder="nsec1..." style="margin-bottom:8px;"></textarea>
+                <button class="submit-btn" onclick="importIdentity()">Import key</button>
+            </div>
+
+            <div class="settings-card">
+                <h3>Relays</h3>
+                <div class="sub">Where your check-ins &amp; reviews are published and read. Other Nostr clients see the same relays.</div>
+                <div id="relayList" style="margin-bottom: 12px;"></div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" class="form-input" id="newRelayUrl" placeholder="wss://relay.example.com" style="flex: 1;">
+                    <button class="submit-btn" onclick="handleAddRelay()" style="padding: 10px 16px;">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Modal -->
+    <div class="modal" id="backupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🔑 Save your new key</div>
+            </div>
+            <p style="font-size:13px;margin:0 0 10px;line-height:1.5;">This is your Proof of Eats identity. Copy the private key below and store it somewhere safe — your password manager or OS keychain. It is <b>only stored in this browser</b>; if you lose it, the identity can't be recovered.</p>
+            <div class="key-box" id="backupKey">…</div>
+            <div class="btn-row">
+                <button class="login-btn" onclick="copyNewSecret()" style="flex:1;">Copy private key</button>
+                <button class="submit-btn" onclick="hideBackup()" style="flex:1;">I saved it</button>
             </div>
         </div>
     </div>
@@ -1019,6 +1135,10 @@
             <div class="nav-icon">👤</div>
             <div>ME</div>
         </div>
+        <div class="nav-item" onclick="navigateTo('settings')" id="navSettings">
+            <div class="nav-icon">⚙️</div>
+            <div>SETTINGS</div>
+        </div>
     </div>
 
     <script>
@@ -1029,6 +1149,10 @@
         let nostrPublicKey = null;
         let nostrRelay = null;
         let userProfile = null; // Store fetched profile data {name, picture, lud16, nip05}
+        let authMode = null;    // 'embedded' (in-app key) | 'extension' (NIP-07/Alby) | null
+        let embeddedNsec = null; // hex secret key for embedded identity
+        const LS_AUTH = 'poe_auth';
+        let pendingBackupSecret = null;
         
         // Relay management
         const DEFAULT_RELAYS = [
@@ -1175,7 +1299,7 @@
             renderRestaurants();
             renderReviews();
             populateRestaurantSelect();
-            checkNostrConnection();
+            initAuth();
         });
 
         // Navigation
@@ -1201,7 +1325,8 @@
                 document.getElementById('searchInput').focus();
             } else if (page === 'profile') {
                 updateProfile();
-                renderRelayList();
+            } else if (page === 'settings') {
+                renderSettings();
             } else if (page === 'review') {
                 updateReviewLoginStatus();
             } else if (page === 'discover') {
@@ -1509,27 +1634,24 @@
         }
         
         async function fetchProfileFromRelays(pubkey) {
-            // Try each relay in order until one succeeds
-            for (let i = 0; i < configuredRelays.length; i++) {
-                const relayUrl = configuredRelays[(activeRelayIndex + i) % configuredRelays.length];
-                console.log(`Trying relay: ${relayUrl}`);
-                try {
-                    const relay = await window.nostr.useRelay(relayUrl);
-                    const event = await relay.get({ kinds: [0], authors: [pubkey] });
-                    if (event) {
-                        const metadata = JSON.parse(event.content);
-                        activeRelayIndex = configuredRelays.indexOf(relayUrl);
-                        console.log(`Profile fetched from ${relayUrl}:`, metadata);
-                        return {
-                            name: metadata.display_name || metadata.name,
-                            picture: metadata.picture,
-                            lud16: metadata.lud16,
-                            nip05: metadata.nip05
-                        };
-                    }
-                } catch (e) {
-                    console.log(`Relay ${relayUrl} failed:`, e.message);
+            // Fetch kind-0 metadata via nostr-tools SimplePool (works without an extension)
+            if (typeof NostrTools === 'undefined' || !NostrTools.SimplePool) return null;
+            const pool = new NostrTools.SimplePool();
+            try {
+                const event = await pool.get(configuredRelays, { kinds: [0], authors: [pubkey] });
+                if (event && event.content) {
+                    const metadata = JSON.parse(event.content);
+                    return {
+                        name: metadata.display_name || metadata.name,
+                        picture: metadata.picture,
+                        lud16: metadata.lud16,
+                        nip05: metadata.nip05
+                    };
                 }
+            } catch (e) {
+                console.log('Profile fetch failed:', e.message);
+            } finally {
+                try { pool.close(configuredRelays); } catch (e) {}
             }
             return null;
         }
@@ -1566,7 +1688,8 @@
                 }
                 
                 const profileName = userProfile?.name || `User ${nostrPublicKey.substring(0, 8)}`;
-                document.getElementById('profileLoginStatus').innerHTML = `<div class="connected-badge">✓ Connected as ${profileName}</div>${lightningHtml}<button class="logout-btn" onclick="disconnectNostr()" style="margin-top:8px;background:#666;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Disconnect</button>`;
+                const modeLabel = authMode === 'embedded' ? ' · in-app key' : (authMode === 'extension' ? ' · Alby' : '');
+                document.getElementById('profileLoginStatus').innerHTML = `<div class="connected-badge">✓ Connected as ${profileName}${modeLabel}</div>${lightningHtml}<div class="btn-row"><button class="logout-btn" onclick="disconnectNostr()" style="background:#666;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Sign out</button><button class="logout-btn" onclick="navigateTo('settings')" style="background:#fff;color:var(--primary-red);border:1px solid var(--primary-red);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Settings</button></div>`;
                 document.getElementById('addRestaurantLoginStatus').innerHTML = '<div class="connected-badge">✓ Connected - You can add restaurants</div>';
                 document.getElementById('addRestaurantBtn').disabled = false;
                 
@@ -1597,7 +1720,7 @@
             } else {
                 document.getElementById('profileAvatar').textContent = '?';
                 document.getElementById('profileName').textContent = 'Not Connected';
-                document.getElementById('profileLoginStatus').innerHTML = '<button class="login-btn" onclick="connectNostr()">Connect Nostr Wallet</button>';
+                document.getElementById('profileLoginStatus').innerHTML = loginCtaHtml();
                 document.getElementById('addRestaurantLoginStatus').innerHTML = '';
                 document.getElementById('addRestaurantBtn').disabled = true;
                 document.getElementById('profileReviews').textContent = '0';
@@ -1689,83 +1812,289 @@
             }
             return result;
         }
-            
-            // Fallback: fetch from relay using nostr-tools
-            try {
-                const relay = await nostr.useRelay('wss://relay.primal.net');
-                const event = await relay.get({ kinds: [0], authors: [pubkey] });
-                if (event) {
-                    const metadata = JSON.parse(event.content);
-                    return {
-                        name: metadata.name || metadata.display_name,
-                        picture: metadata.picture,
-                        lud16: metadata.lud16,
-                        nip05: metadata.nip05
-                    };
-                }
-            } catch (e) {
-                console.log('Relay fetch failed:', e);
+
+
+        // ===== Identity & Auth =====
+        function persistAuth() {
+            if (authMode === 'embedded' && embeddedNsec && nostrPublicKey) {
+                localStorage.setItem(LS_AUTH, JSON.stringify({ mode: 'embedded', nsec: embeddedNsec, npub: nostrPublicKey }));
+            } else if (authMode === 'extension' && nostrPublicKey) {
+                localStorage.setItem(LS_AUTH, JSON.stringify({ mode: 'extension', pubkey: nostrPublicKey, profile: userProfile || null }));
+            } else {
+                localStorage.removeItem(LS_AUTH);
             }
-            
-            return null;
+            localStorage.removeItem('nostr_pubkey');
+            localStorage.removeItem('nostr_profile');
         }
 
-        async function checkNostrConnection() {
-            // Check localStorage for cached session
-            const cachedPubkey = localStorage.getItem('nostr_pubkey');
-            const cachedProfile = localStorage.getItem('nostr_profile');
-            
-            if (cachedPubkey && cachedProfile) {
-                console.log('Restoring cached Nostr session');
-                nostrPublicKey = cachedPubkey;
-                userProfile = JSON.parse(cachedProfile);
-                updateProfile();
-                updateReviewLoginStatus();
-                return;
-            }
-            
-            if (window.nostr) {
-                try {
-                    nostrPublicKey = await window.nostr.getPublicKey();
-                    userProfile = await fetchProfile(nostrPublicKey);
-                    updateProfile();
-                    updateReviewLoginStatus();
-                } catch (e) {
-                    console.log('Nostr not connected');
+        async function initAuth() {
+            try {
+                const stored = localStorage.getItem(LS_AUTH);
+                if (stored) {
+                    const a = JSON.parse(stored);
+                    if (a.mode === 'embedded' && a.nsec) {
+                        embeddedNsec = a.nsec;
+                        nostrPublicKey = a.npub || (typeof NostrTools !== 'undefined' && NostrTools.getPublicKey ? NostrTools.getPublicKey(hexToBytes(a.nsec)) : null);
+                        if (nostrPublicKey && !a.npub) persistAuth();
+                        authMode = 'embedded';
+                    } else if (a.mode === 'extension' && a.pubkey) {
+                        nostrPublicKey = a.pubkey;
+                        userProfile = a.profile || null;
+                        authMode = 'extension';
+                    }
                 }
+                if (!authMode && window.nostr) {
+                    try {
+                        nostrPublicKey = await window.nostr.getPublicKey();
+                        authMode = 'extension';
+                        persistAuth();
+                    } catch (e) { /* user declined */ }
+                }
+            } catch (e) {
+                localStorage.removeItem(LS_AUTH);
+            }
+
+            updateProfile();
+            updateReviewLoginStatus();
+            if (typeof renderSettings === 'function') renderSettings();
+
+            if (nostrPublicKey && authMode !== 'extension') {
+                // Enrich profile metadata (kind 0) in the background
+                fetchProfile(nostrPublicKey).then(p => {
+                    if (p && !userProfile) { userProfile = p; persistAuth(); updateProfile(); }
+                }).catch(() => {});
             }
         }
 
         async function connectNostr() {
             if (!window.nostr) {
-                alert('Please install a Nostr extension like Alby or nos2x');
+                alert('No Nostr extension found. Install Alby (https://getalby.com) — or tap "Create free identity" to make one right here.');
                 return;
             }
             try {
                 nostrPublicKey = await window.nostr.getPublicKey();
+                authMode = 'extension';
                 userProfile = await fetchProfile(nostrPublicKey);
-                
-                // Cache to localStorage for persistence
-                localStorage.setItem('nostr_pubkey', nostrPublicKey);
-                localStorage.setItem('nostr_profile', JSON.stringify(userProfile));
-                
+                persistAuth();
                 updateProfile();
                 updateReviewLoginStatus();
-                const profileName = userProfile?.name ? userProfile.name : 'Nostr';
-                alert(`Connected to ${profileName}!`);
+                if (typeof renderSettings === 'function') renderSettings();
+                const profileName = userProfile?.name ? userProfile.name : 'your Nostr account';
+                alert(`Connected to ${profileName} via Alby ✓`);
             } catch (e) {
-                alert('Failed to connect: ' + e.message);
+                alert('Connection cancelled or failed: ' + e.message);
+            }
+        }
+
+        // Create a brand-new Nostr identity right in the app (no extension, no login)
+        async function createIdentity() {
+            if (typeof NostrTools === 'undefined' || !NostrTools.generateSecretKey) {
+                alert('The signing library did not load (are you offline?). Reload with an internet connection and try again.');
+                return;
+            }
+            try {
+                const sk = NostrTools.generateSecretKey();
+                embeddedNsec = bytesToHex(sk);
+                nostrPublicKey = NostrTools.getPublicKey(sk);
+                authMode = 'embedded';
+                persistAuth();
+                updateProfile();
+                updateReviewLoginStatus();
+                if (typeof renderSettings === 'function') renderSettings();
+                fetchProfile(nostrPublicKey).then(p => {
+                    if (p) { userProfile = p; persistAuth(); updateProfile(); }
+                }).catch(() => {});
+                showBackup(nsecDisplay(embeddedNsec));
+            } catch (e) {
+                alert('Failed to create identity: ' + e.message);
             }
         }
 
         function disconnectNostr() {
+            const msg = authMode === 'embedded'
+                ? 'Sign out and DELETE this key from this device? Make sure you saved it first (Settings → Reveal private key). This cannot be undone here.'
+                : 'Disconnect your Nostr account from this browser?';
+            if (!confirm(msg)) return;
+            localStorage.removeItem(LS_AUTH);
             localStorage.removeItem('nostr_pubkey');
             localStorage.removeItem('nostr_profile');
+            embeddedNsec = null;
+            authMode = null;
             nostrPublicKey = null;
             userProfile = null;
             updateProfile();
             updateReviewLoginStatus();
-            alert('Disconnected from Nostr');
+            if (typeof renderSettings === 'function') renderSettings();
+        }
+
+        async function importIdentity() {
+            const input = document.getElementById('importKeyInput');
+            const raw = (input.value || '').trim();
+            if (!raw) { alert('Paste your nsec1… private key (or 64-char hex) first.'); return; }
+            try {
+                let secBytes;
+                if (raw.startsWith('nsec1')) {
+                    if (typeof NostrTools === 'undefined' || !NostrTools.nip19) throw new Error('nostr-tools unavailable');
+                    const decoded = NostrTools.nip19.decode(raw);
+                    if (decoded.type !== 'nsec') throw new Error('That is not a private key (nsec).');
+                    secBytes = decoded.data;
+                } else if (/^[0-9a-fA-F]{64}$/.test(raw)) {
+                    secBytes = hexToBytes(raw.toLowerCase());
+                } else {
+                    throw new Error('Could not parse that — expected nsec1… or a 64-character hex key.');
+                }
+                if (typeof NostrTools === 'undefined' || !NostrTools.getPublicKey) throw new Error('Signing library unavailable');
+                const pubkey = NostrTools.getPublicKey(secBytes);
+                if (!confirm('Import key ending …' + bytesToHex(secBytes).slice(-6) + ' and replace the current identity on this device?')) return;
+                embeddedNsec = bytesToHex(secBytes);
+                nostrPublicKey = pubkey;
+                authMode = 'embedded';
+                userProfile = null;
+                persistAuth();
+                updateProfile();
+                updateReviewLoginStatus();
+                if (typeof renderSettings === 'function') renderSettings();
+                input.value = '';
+                alert('Identity imported ✓');
+                fetchProfile(pubkey).then(p => { if (p) { userProfile = p; persistAuth(); updateProfile(); } }).catch(() => {});
+            } catch (e) {
+                alert('Import failed: ' + e.message);
+            }
+        }
+
+        // Sign an event with whichever identity is active
+        async function signWithActiveIdentity(template) {
+            if (authMode === 'extension') {
+                if (!window.nostr) throw new Error('Extension unavailable');
+                return await window.nostr.signEvent(template);
+            }
+            if (authMode === 'embedded') {
+                if (!embeddedNsec) throw new Error('No embedded key');
+                if (typeof NostrTools === 'undefined' || !NostrTools.finalizeEvent) throw new Error('Signing library unavailable');
+                return NostrTools.finalizeEvent(template, hexToBytes(embeddedNsec));
+            }
+            throw new Error('No active identity');
+        }
+
+        // Best-effort broadcast to relays over raw WebSocket (NIP-01)
+        async function publishToRelays(event, relays) {
+            const results = await Promise.all(relays.map(relay => new Promise(resolve => {
+                let ws = null;
+                let done = false;
+                const finish = (ok, error) => {
+                    if (done) return;
+                    done = true;
+                    clearTimeout(timer);
+                    try { if (ws) ws.close(); } catch (e) {}
+                    resolve({ relay, ok, error });
+                };
+                try { ws = new WebSocket(relay); } catch (e) { resolve({ relay, ok: false, error: e.message }); return; }
+                const timer = setTimeout(() => finish(false, 'timeout'), 7000);
+                ws.onopen = () => { try { ws.send(JSON.stringify(['EVENT', event])); } catch (e) { finish(false, e.message); } };
+                ws.onmessage = (m) => {
+                    try {
+                        const msg = JSON.parse(m.data);
+                        if (msg[0] === 'OK') finish(msg[2] !== false, msg[3] || '');
+                    } catch (e) {}
+                };
+                ws.onerror = () => finish(false, 'connection error');
+            })));
+            const okCount = results.filter(r => r.ok).length;
+            console.log(`Published to ${okCount}/${relays.length} relays`, results);
+            return results;
+        }
+
+        // ===== Key formatting / clipboard =====
+        function bytesToHex(bytes) { return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(''); }
+        function hexToBytes(hex) { const out = new Uint8Array(hex.length / 2); for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16); return out; }
+        function npubDisplay(pubkeyHex) {
+            try { return NostrTools.nip19.npubEncode(hexToBytes(pubkeyHex)); } catch (e) { return 'npub…' + pubkeyHex.slice(0, 10); }
+        }
+        function nsecDisplay(secretHex) {
+            try { return NostrTools.nip19.nsecEncode(hexToBytes(secretHex)); } catch (e) { return 'hex:' + secretHex; }
+        }
+        function copyText(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).catch(() => {});
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (e) {}
+                document.body.removeChild(ta);
+            }
+        }
+        function copyNpub() {
+            if (!nostrPublicKey) { alert('No identity yet — create one first.'); return; }
+            copyText(npubDisplay(nostrPublicKey));
+            alert('Public key (npub) copied ✓');
+        }
+        function revealSecretKey() {
+            const box = document.getElementById('settingsNsec');
+            if (!embeddedNsec) {
+                box.textContent = 'No in-app key on this device — nothing to reveal.';
+                box.style.display = 'block';
+                return;
+            }
+            const hidden = box.style.display === 'none';
+            box.textContent = hidden ? nsecDisplay(embeddedNsec) : '';
+            box.style.display = hidden ? 'block' : 'none';
+        }
+        function copySecretKey() {
+            if (!embeddedNsec) { alert('No in-app key — if you used Alby, the key stays in the extension.'); return; }
+            copyText(nsecDisplay(embeddedNsec));
+            alert('Private key copied — store it in your keychain / password manager 🔑');
+        }
+
+        // ===== Backup modal =====
+        function showBackup(nsecText) {
+            pendingBackupSecret = nsecText;
+            document.getElementById('backupKey').textContent = nsecText;
+            document.getElementById('backupModal').classList.add('active');
+        }
+        function hideBackup() {
+            document.getElementById('backupModal').classList.remove('active');
+            pendingBackupSecret = null;
+        }
+        function copyNewSecret() {
+            if (!pendingBackupSecret) return;
+            copyText(pendingBackupSecret);
+            alert('Private key copied — save it somewhere safe now 🔑');
+        }
+
+        // ===== Settings page =====
+        function renderSettings() {
+            renderRelayList();
+            const el = id => document.getElementById(id);
+            if (!el('settingsIdentityName')) return;
+            if (nostrPublicKey) {
+                el('settingsIdentityName').textContent = userProfile?.name || 'User ' + nostrPublicKey.slice(0, 8);
+                el('settingsNpub').textContent = npubDisplay(nostrPublicKey);
+                el('settingsMode').textContent = authMode === 'embedded' ? 'In-app key' : 'NIP-07 extension';
+                el('settingsMode').style.background = '#e8f5e9';
+                el('settingsKeyStatus').textContent = authMode === 'embedded'
+                    ? 'Private key is stored only in this browser. Back it up below — or save it into your password manager / OS keychain.'
+                    : 'Your key stays inside the extension (Alby). Nothing secret is stored here.';
+            } else {
+                el('settingsIdentityName').textContent = 'Not signed in';
+                el('settingsNpub').textContent = '—';
+                el('settingsMode').textContent = 'No identity';
+                el('settingsMode').style.background = '#eee';
+                el('settingsKeyStatus').textContent = 'Create a free identity on the Home or Write Review page — no account needed.';
+            }
+        }
+
+        function loginCtaHtml() {
+            const albyBtn = window.nostr ? '<button class="btn-secondary" onclick="connectNostr()" style="flex:1;">Connect Alby</button>' : '';
+            return '<div class="cta-banner">'
+                + '<div style="font-weight:600;margin-bottom:6px;">✨ No login needed</div>'
+                + '<div style="margin-bottom:10px;color:#555;">Create a free Nostr identity right here — your key stays on this device, and you can back it up anytime in Settings.</div>'
+                + '<div class="btn-row"><button class="login-btn" onclick="createIdentity()" style="flex:1;">⚡ Create free identity</button>' + albyBtn + '</div>'
+                + '<div style="margin-top:8px;font-size:12px;color:#999;">Already have a key? Import it in Settings.</div>'
+                + '</div>';
         }
         
         function renderRelayList() {
@@ -1820,10 +2149,11 @@
         function updateReviewLoginStatus() {
             const container = document.getElementById('reviewLoginStatus');
             if (nostrPublicKey) {
-                container.innerHTML = '<div class="connected-badge">✓ Connected - You can publish reviews</div>';
+                const mode = authMode === 'embedded' ? ' with your in-app identity' : ' via Alby';
+                container.innerHTML = '<div class="connected-badge">✓ Connected' + mode + ' — ready to publish</div>';
                 document.getElementById('submitReviewBtn').disabled = false;
             } else {
-                container.innerHTML = '<div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 13px;">⚠️ <strong>Read-only mode</strong> - Connect Nostr wallet to publish reviews</div>';
+                container.innerHTML = loginCtaHtml();
                 document.getElementById('submitReviewBtn').disabled = true;
             }
         }
@@ -1872,7 +2202,12 @@
                     event.tags.push(['image', photo]);
                 });
 
-                const signedEvent = await window.nostr.signEvent(event);
+                const signedEvent = await signWithActiveIdentity(event);
+                const pubResults = await publishToRelays(signedEvent, configuredRelays);
+                const okCount = pubResults.filter(r => r.ok).length;
+                const publishMsg = okCount > 0
+                    ? `Review published to ${okCount} relay${okCount === 1 ? '' : 's'} ✓`
+                    : 'Review saved locally — relays unreachable (check Settings → Relays).';
                 
                 // Add to local state
                 const newReview = {
@@ -1906,7 +2241,7 @@
                     restaurant.checkins = restReviews.length;
                 }
 
-                alert('Review submitted successfully!');
+                alert(publishMsg);
                 renderRestaurants();
                 renderReviews();
                 populateRestaurantSelect();

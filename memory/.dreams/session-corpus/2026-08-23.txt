@@ -1,0 +1,5 @@
+[proof-of-eats/sessions/proof-of-eats/08484e9e-bf06-4dc1-b1ea-bed1f0801f84.jsonl#L5] User: open proof of eats
+[proof-of-eats/sessions/proof-of-eats/08484e9e-bf06-4dc1-b1ea-bed1f0801f84.jsonl#L12] Assistant: Browser's available. Let me start a local server for the app and open it.
+[proof-of-eats/sessions/proof-of-eats/08484e9e-bf06-4dc1-b1ea-bed1f0801f84.jsonl#L14] Assistant: Server's up on port 8123. Now launching the browser to open it.
+[proof-of-eats/sessions/proof-of-eats/08484e9e-bf06-4dc1-b1ea-bed1f0801f84.jsonl#L20] Assistant: Opened. Let me verify it actually rendered.
+[proof-of-eats/sessions/proof-of-eats/08484e9e-bf06-4dc1-b1ea-bed1f0801f84.jsonl#L30] Assistant: Proof of Eats is open. 🍽️ - **URL**: `http://localhost:8123/index.html` (local server on port 8123) - **Tab**: t1 in the OpenClaw browser - **State**: Homepage rendered cleanly — search bar, sort dropdown (Comprehensive, TASTE, Recent, Check-ins,
