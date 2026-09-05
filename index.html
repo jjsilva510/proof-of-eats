@@ -1005,16 +1005,12 @@
         </div>
     </div>
 
-    <!-- Search Bar - Yelp Style (visible on Discover and Search pages) -->
+    <!-- Search Bar - single input, no location field (visible on Discover and Search pages) -->
     <div class="search-container" id="searchContainer">
         <div class="search-box">
             <div class="search-input-wrapper">
                 <span class="search-icon">🔍</span>
-                <input type="text" class="search-input" id="searchInput" placeholder="Tacos, cheap dinner, Max's">
-            </div>
-            <div class="location-input-wrapper">
-                <span class="location-icon">📍</span>
-                <input type="text" class="location-input" id="locationInput" placeholder="New York, NY or 10001">
+                <input type="text" class="search-input" id="searchInput" placeholder="Tacos, karaoke, rooftop bars, Max's">
             </div>
             <button class="search-btn" onclick="performSearch()">Search</button>
             <button class="filter-btn" onclick="openFilters()">⚙️ Filter</button>
@@ -2013,27 +2009,22 @@
             return sorted;
         }
 
-        // Yelp-style Search with separate What and Where fields
+        // Single-field search (no location box); matches name, cuisine, description, city/neighborhood inline
         function performSearch() {
             const whatQuery = document.getElementById('searchInput').value.toLowerCase().trim();
-            const whereQuery = document.getElementById('locationInput').value.toLowerCase().trim();
-            
+
             const results = restaurants.filter(r => {
                 // Respect the active category chip from Discover
                 if (activeCategory !== 'all' && (r.category || 'food') !== activeCategory) return false;
-                // Match "what" field (restaurant name, cuisine)
-                const matchesWhat = !whatQuery || 
+                if (!whatQuery) return true;
+                return (
                     r.name.toLowerCase().includes(whatQuery) ||
                     r.cuisine.some(c => c.toLowerCase().includes(whatQuery)) ||
-                    r.description.toLowerCase().includes(whatQuery);
-                
-                // Match "where" field (city, neighborhood, location)
-                const matchesWhere = !whereQuery ||
-                    r.city.toLowerCase().includes(whereQuery) ||
-                    r.neighborhood.toLowerCase().includes(whereQuery) ||
-                    r.location.toLowerCase().includes(whereQuery);
-                
-                return matchesWhat && matchesWhere;
+                    r.description.toLowerCase().includes(whatQuery) ||
+                    r.city.toLowerCase().includes(whatQuery) ||
+                    r.neighborhood.toLowerCase().includes(whatQuery) ||
+                    r.location.toLowerCase().includes(whatQuery)
+                );
             });
 
             const container = document.getElementById('searchResults');
@@ -2062,10 +2053,6 @@
 
         // Allow Enter key to trigger search
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') performSearch();
-        });
-        
-        document.getElementById('locationInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') performSearch();
         });
 

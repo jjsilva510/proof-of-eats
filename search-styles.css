@@ -1,0 +1,79 @@
+/* Shared body area for all style demos */
+.shot { background: #fff; }
+.shot .body { padding: 4px 12px 0; display: flex; flex-direction: column; gap: 8px; }
+.s1 .statusbar, .s2 .statusbar, .s3 .statusbar, .s4 .statusbar { color: #222; }
+.s3 .statusbar { color: #fff; }
+
+/* ---------- Style 1 · Split pill (Dianping home) ---------- */
+.s1 .appbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px 2px;
+}
+.s1 .qr { font-size: 18px; color: #555; width: 22px; text-align: center; }
+.s1 .bar {
+    flex: 1; display: flex; align-items: center;
+    background: #f4f4f4; border-radius: 999px; padding: 8px 12px;
+}
+.s1 .bar .ico { font-size: 13px; margin-right: 6px; opacity: .55; }
+.s1 .bar input { flex: 1; border: none; background: transparent; font-size: 13px; outline: none; color: #333; }
+.s1 .bar input::placeholder { color: #b0b0b0; }
+.s1 .go {
+    border: none; background: var(--primary-red); color: #fff;
+    font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 999px;
+}
+.s1 .cats { border-bottom: 1px solid #f0f0f0; }
+
+/* ---------- Style 2 · Full-bleed pill + hot words ---------- */
+.s2 .appbar { padding: 8px 12px 0; }
+.s2 .bar {
+    display: flex; align-items: center;
+    background: #f2f2f2; border-radius: 999px; padding: 10px 14px;
+}
+.s2 .bar .ico { font-size: 14px; margin-right: 8px; opacity: .5; }
+.s2 .bar input { flex: 1; border: none; background: transparent; font-size: 14px; outline: none; }
+.s2 .bar input::placeholder { color: #aaa; }
+.s2 .bar .cam { font-size: 14px; opacity: .45; }
+.s2 .hotwords { display: flex; gap: 8px; padding: 10px 12px 12px; border-bottom: 1px solid #f0f0f0; overflow-x: auto; }
+.s2 .hotwords span { flex: 0 0 auto; font-size: 11px; color: #666; background: #f6f6f6; border-radius: 999px; padding: 4px 10px; }
+.s2 .hotwords .hot { color: var(--primary-red); background: #fff1f0; font-weight: 700; }
+
+/* ---------- Style 3 · Hero overlay ---------- */
+.s3 .hero {
+    background: linear-gradient(135deg, #E4393C, #FF8A00);
+    padding: 18px 14px 26px;
+}
+.s3 .herolabel { color: rgba(255,255,255,.9); font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+.s3 .bar {
+    display: flex; align-items: center; background: #fff;
+    border-radius: 999px; padding: 6px 6px 6px 14px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+}
+.s3 .bar .ico { font-size: 14px; margin-right: 8px; opacity: .5; }
+.s3 .bar input { flex: 1; border: none; font-size: 14px; outline: none; }
+.s3 .bar input::placeholder { color: #b5b5b5; }
+.s3 .divider { width: 1px; height: 20px; background: #eee; margin: 0 4px; }
+.s3 .go { border: none; background: var(--primary-red); color: #fff; font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 999px; }
+.s3 .body { padding-top: 12px; }
+
+/* ---------- Style 4 · Compact header w/ Map toggle ---------- */
+.s4 .appbar { display: flex; align-items: center; gap: 10px; padding: 10px 12px 12px; border-bottom: 1px solid #f0f0f0; }
+.s4 .back { font-size: 20px; color: #444; line-height: 1; }
+.s4 .bar {
+    flex: 1; display: flex; align-items: center;
+    border: 1.5px solid #e2e2e2; border-radius: 999px; padding: 8px 12px; background: #fff;
+}
+.s4 .bar .ico { font-size: 13px; margin-right: 8px; color: #999; }
+.s4 .bar input { flex: 1; border: none; font-size: 13px; outline: none; }
+.s4 .bar input::placeholder { color: #b5b5b5; }
+.s4 .map { font-size: 12px; font-weight: 700; color: var(--primary-red); border: 1.5px solid var(--primary-red); border-radius: 999px; padding: 5px 10px; }
+
+/* ---------- Style 5 · Minimal underline ---------- */
+.s5 .appbar { padding: 10px 14px 0; }
+.s5 .row { display: flex; align-items: center; gap: 10px; }
+.s5 .row .ico { font-size: 15px; opacity: .5; }
+.s5 .row input { flex: 1; border: none; font-size: 15px; outline: none; background: transparent; }
+.s5 .row input::placeholder { color: #b0b0b0; }
+.s5 .gear { font-size: 15px; color: #888; border: 1px solid #e3e3e3; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
+.s5 .underline { height: 2px; background: #f0f0f0; margin-top: 8px; border-radius: 2px; position: relative; }
+.s5 .underline::before { content: ""; position: absolute; left: 0; top: 0; height: 2px; width: 34%; background: var(--primary-red); border-radius: 2px; }
+.s5 .cats { border-bottom: 1px solid #f0f0f0; }

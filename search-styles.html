@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proof of Eat — Search Bar Styles</title>
+<style>
+    :root {
+        --primary-red: #E4393C;
+        --accent-orange: #FF8A00;
+        --text-dark: #333;
+        --text-light: #666;
+        --text-muted: #999;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background: #ececec; padding-bottom: 40px; }
+    .page-title { text-align: center; padding: 18px 12px 6px; font-size: 18px; font-weight: 700; color: #222; }
+    .page-sub { text-align: center; font-size: 12px; color: #888; margin-bottom: 18px; }
+    .demo { width: 400px; margin: 0 auto 26px; }
+    .shot { border-radius: 18px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+    .caption { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 4px 0; }
+    .caption .name { font-size: 15px; font-weight: 700; color: #222; }
+    .caption .hint { font-size: 11px; color: #999; }
+    .ctx { font-size: 11px; color: #aaa; text-align: center; margin-top: 24px; }
+
+    .statusbar { display: flex; justify-content: space-between; font-size: 10px; padding: 6px 14px 2px; font-weight: 600; }
+    .homebar { height: 5px; background: #222; width: 120px; border-radius: 3px; margin: 12px auto 10px; opacity: .15; }
+    .cats { display: flex; gap: 14px; padding: 12px 14px 14px; overflow-x: auto; }
+    .cats i { font-style: normal; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; color: #777; }
+    .cats .ci { width: 32px; height: 32px; border-radius: 50%; background: #f2f2f2; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .cats .ci.hot { border: 2px solid var(--primary-red); background: #fff1f0; }
+    .ph { height: 56px; border-radius: 8px; background: #f3f3f3; display: flex; align-items: center; padding: 0 12px; font-size: 11px; color: #bbb; }
+</style>
+<link rel="stylesheet" href="search-styles.css">
+</head>
+<body>
+    <div class="page-title">Search bar — 5 styles (Dianping-inspired)</div>
+    <div class="page-sub">No location/zip field — one search input only. Tap a style number in chat to pick it.</div>
+
+    <!-- ============ STYLE 1 ============ -->
+    <div class="demo">
+        <div class="shot s1">
+            <div class="statusbar"><span>9:41</span><span>5G ▪ 100%</span></div>
+            <div class="appbar">
+                <span class="qr">⌗</span>
+                <div class="bar"><span class="ico">🔍</span><input placeholder="Search food, bars, spots…" disabled></div>
+                <button class="go">Search</button>
+            </div>
+            <div class="cats"><i><span class="ci hot">🌐</span>All</i><i><span class="ci">🍜</span>Food</i><i><span class="ci">🍺</span>Bars</i><i><span class="ci">💎</span>Luxury</i><i><span class="ci">🗽</span>Sight</i><i><span class="ci">🎡</span>Fun</i></div>
+            <div class="body"><div class="ph">Spot card</div><div class="ph">Spot card</div></div>
+        </div>
+        <div class="caption"><span class="name">1 · Split pill</span><span class="hint">QR + pill + red Search button · closest to Dianping home</span></div>
+    </div>
+
+    <!-- ============ STYLE 2 ============ -->
+    <div class="demo">
+        <div class="shot s2">
+            <div class="statusbar"><span>9:41</span><span>5G ▪ 100%</span></div>
+            <div class="appbar">
+                <div class="bar"><span class="ico">🔍</span><input placeholder="Tacos, karaoke, rooftop bars…" disabled><span class="cam">📷</span></div>
+            </div>
+            <div class="hotwords"><span class="hot">🔥 Trending</span><span>Noodle bars</span><span>Brunch</span><span>Karaoke</span><span>Live jazz</span></div>
+            <div class="body"><div class="ph">Spot card</div><div class="ph">Spot card</div></div>
+        </div>
+        <div class="caption"><span class="name">2 · Full-bleed pill + hot words</span><span class="hint">Borderless grey pill, camera icon, trending chips underneath</span></div>
+    </div>
+
+    <!-- ============ STYLE 3 ============ -->
+    <div class="demo">
+        <div class="shot s3">
+            <div class="statusbar"><span>9:41</span><span>5G ▪ 100%</span></div>
+            <div class="hero">
+                <div class="herolabel">Tonight, near you</div>
+                <div class="bar"><span class="ico">🔍</span><input placeholder="Search anything edible…" disabled><span class="divider"></span><button class="go">Go</button></div>
+            </div>
+            <div class="body"><div class="ph">Spot card</div><div class="ph">Spot card</div></div>
+        </div>
+        <div class="caption"><span class="name">3 · Hero overlay</span><span class="hint">White pill floating on a red gradient hero band</span></div>
+    </div>
+
+    <!-- ============ STYLE 4 ============ -->
+    <div class="demo">
+        <div class="shot s4">
+            <div class="statusbar"><span>9:41</span><span>5G ▪ 100%</span></div>
+            <div class="appbar">
+                <span class="back">‹</span>
+                <div class="bar"><span class="ico">⌖</span><input placeholder="Search spots" disabled></div>
+                <span class="map">Map</span>
+            </div>
+            <div class="body"><div class="ph">Spot card</div><div class="ph">Spot card</div></div>
+        </div>
+        <div class="caption"><span class="name">4 · Compact header</span><span class="hint">Back chevron, bordered pill, Nearby / Map toggles on the right</span></div>
+    </div>
+
+    <!-- ============ STYLE 5 ============ -->
+    <div class="demo">
+        <div class="shot s5">
+            <div class="statusbar"><span>9:41</span><span>5G ▪ 100%</span></div>
+            <div class="appbar">
+                <div class="row">
+                    <span class="ico">🔍</span>
+                    <input placeholder="Search Proof of Eat" disabled>
+                    <span class="gear">⚙︎</span>
+                </div>
+                <div class="underline"></div>
+            </div>
+            <div class="cats"><i><span class="ci hot">🌐</span>All</i><i><span class="ci">🍜</span>Food</i><i><span class="ci">🍺</span>Bars</i><i><span class="ci">💎</span>Luxury</i><i><span class="ci">🗽</span>Sight</i><i><span class="ci">🎡</span>Fun</i></div>
+            <div class="body"><div class="ph">Spot card</div><div class="ph">Spot card</div></div>
+        </div>
+        <div class="caption"><span class="name">5 · Minimal underline</span><span class="hint">No box — icon, placeholder, filter gear, thin red underline that grows on focus</span></div>
+    </div>
+
+    <div class="ctx">Styles 1–5 above. Reply with a number and I'll wire it into Discover.</div>
+</body>
+</html>
