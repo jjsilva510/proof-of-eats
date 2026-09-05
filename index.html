@@ -1015,16 +1015,11 @@
         
         <!-- User's Added Restaurants -->
         <div class="form-container">
-            <h3 style="margin: 20px 0 12px; font-size: 16px;">Restaurants You've Added</h3>
-            <div id="userAddedRestaurants">
-                <div class="empty-state">Connect your Nostr wallet to add restaurants</div>
-            </div>
-        </div>
-        
-        <div class="form-container">
-            <div class="settings-card" style="text-align:center;color:var(--text-light);font-size:13px;">
-                Relays, private key backup &amp; more live in <b>Settings</b>.
-                <div style="margin-top:8px;"><button class="btn-secondary" onclick="navigateTo('settings')">Open Settings</button></div>
+            <button class="add-restaurant-toggle" id="addedRestaurantsToggle" onclick="toggleAddedRestaurants()">🏬 Restaurants You've Added</button>
+            <div id="addedRestaurantsWrap" style="display:none; margin-top:12px;">
+                <div id="userAddedRestaurants">
+                    <div class="empty-state">Sign in to see restaurants you add</div>
+                </div>
             </div>
         </div>
     </div>
@@ -1751,7 +1746,7 @@
                 const issueLine = (!userProfile || !userProfile.name) && lastProfileIssue
                     ? `<div style="font-size:12px;color:#a06a00;margin-top:8px;">${lastProfileIssue}</div>`
                     : '';
-                document.getElementById('profileLoginStatus').innerHTML = `<div class="connected-badge">✓ Connected as ${profileName}${modeLabel}</div>${lightningHtml}${issueLine}<div class="btn-row"><button class="logout-btn" onclick="openProfileModal()" style="background:#fff;color:var(--primary-red);border:1px solid var(--primary-red);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">✏️ Edit profile</button><button class="logout-btn" onclick="refreshProfile()" title="Fetch profile from relays" style="background:#fff;color:#666;border:1px solid #ccc;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">⟳ Refresh</button><button class="logout-btn" onclick="disconnectNostr()" style="background:#666;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Sign out</button><button class="logout-btn" onclick="navigateTo('settings')" style="background:#fff;color:var(--primary-red);border:1px solid var(--primary-red);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Settings</button></div>`;
+                document.getElementById('profileLoginStatus').innerHTML = `<div class="connected-badge">✓ Connected as ${profileName}${modeLabel}</div>${lightningHtml}${issueLine}<div class="btn-row"><button class="logout-btn" onclick="openProfileModal()" style="background:#fff;color:var(--primary-red);border:1px solid var(--primary-red);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">✏️ Edit profile</button><button class="logout-btn" onclick="refreshProfile()" title="Fetch profile from relays" style="background:#fff;color:#666;border:1px solid #ccc;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">⟳ Refresh</button><button class="logout-btn" onclick="disconnectNostr()" style="background:#666;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Sign out</button></div>`;
                 renderAddRestaurantStatus();
                 
                 const userReviews = reviews.filter(r => r.userPubkey === nostrPublicKey);
@@ -1786,7 +1781,7 @@
                 document.getElementById('profileReviews').textContent = '0';
                 document.getElementById('profileCheckins').textContent = '0';
                 document.getElementById('profileZaps').textContent = '0';
-                document.getElementById('userAddedRestaurants').innerHTML = '<div class="empty-state"><div>Connect your Nostr wallet to add restaurants</div></div>';
+                document.getElementById('userAddedRestaurants').innerHTML = '<div class="empty-state"><div>Sign in to see restaurants you add</div></div>';
             }
         }
 
@@ -2232,6 +2227,15 @@
                 status.innerHTML = loginCtaHtml();
                 fields.style.display = 'none';
                 btn.disabled = true;
+            }
+        }
+        function toggleAddedRestaurants() {
+            const wrap = document.getElementById('addedRestaurantsWrap');
+            if (wrap.style.display === 'none') {
+                wrap.style.display = 'block';
+                updateProfile(); // refresh the list before showing it
+            } else {
+                wrap.style.display = 'none';
             }
         }
         
