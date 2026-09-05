@@ -1052,6 +1052,33 @@
         </div>
     </div>
 
+    <!-- Edit Profile Modal -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">✏️ Edit profile</div>
+                <button class="close-btn" onclick="hideProfileModal()">&times;</button>
+            </div>
+            <p style="font-size:12px;color:var(--text-light);margin:0 0 14px;">Published as a kind-0 event to your relays — other Nostr apps will see this.</p>
+            <div class="form-group">
+                <label class="form-label">Display name</label>
+                <input type="text" class="form-input" id="profileNameInput" placeholder="e.g., Jeffrey">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Profile picture URL</label>
+                <input type="text" class="form-input" id="profilePictureInput" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">About</label>
+                <textarea class="form-textarea" id="profileAboutInput" placeholder="Food explorer ⚡"></textarea>
+            </div>
+            <div class="btn-row">
+                <button class="submit-btn" onclick="saveProfile()" style="flex:1;">Save &amp; publish</button>
+                <button class="btn-secondary" onclick="hideProfileModal()" style="flex:1;text-align:center;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Backup Modal -->
     <div class="modal" id="backupModal">
         <div class="modal-content">
@@ -1151,6 +1178,7 @@
         let userProfile = null; // Store fetched profile data {name, picture, lud16, nip05}
         let authMode = null;    // 'embedded' (in-app key) | 'extension' (NIP-07/Alby) | null
         let embeddedNsec = null; // hex secret key for embedded identity
+        let lastProfileIssue = null; // human-readable reason when kind-0 fetch fails
         const LS_AUTH = 'poe_auth';
         let pendingBackupSecret = null;
         
@@ -1635,25 +1663,36 @@
         
         async function fetchProfileFromRelays(pubkey) {
             // Fetch kind-0 metadata via nostr-tools SimplePool (works without an extension)
-            if (typeof NostrTools === 'undefined' || !NostrTools.SimplePool) return null;
+            if (typeof NostrTools === 'undefined' || !NostrTools.SimplePool) {
+                lastProfileIssue = 'nostr-tools library did not load (offline or blocked?) — profile lookup skipped.';
+                return null;
+            }
             const pool = new NostrTools.SimplePool();
             try {
-                const event = await pool.get(configuredRelays, { kinds: [0], authors: [pubkey] });
+                const event = await Promise.race([
+                    pool.get(configuredRelays, { kinds: [0], authors: [pubkey] }),
+                    new Promise((_, rej) => setTimeout(() => rej(new Error('relays timed out')), 9000))
+                ]);
                 if (event && event.content) {
                     const metadata = JSON.parse(event.content);
+                    lastProfileIssue = null;
                     return {
                         name: metadata.display_name || metadata.name,
                         picture: metadata.picture,
+                        about: metadata.about,
                         lud16: metadata.lud16,
                         nip05: metadata.nip05
                     };
                 }
+                lastProfileIssue = 'No profile found on the configured relays for this key yet. Publish one with “Edit profile”.';
+                return null;
             } catch (e) {
-                console.log('Profile fetch failed:', e.message);
+                console.warn('Profile fetch failed:', e.message);
+                lastProfileIssue = 'Profile lookup failed: ' + e.message;
+                return null;
             } finally {
                 try { pool.close(configuredRelays); } catch (e) {}
             }
-            return null;
         }
         
         // Initialize relays on app start
@@ -1689,7 +1728,10 @@
                 
                 const profileName = userProfile?.name || `User ${nostrPublicKey.substring(0, 8)}`;
                 const modeLabel = authMode === 'embedded' ? ' · in-app key' : (authMode === 'extension' ? ' · Alby' : '');
-                document.getElementById('profileLoginStatus').innerHTML = `<div class="connected-badge">✓ Connected as ${profileName}${modeLabel}</div>${lightningHtml}<div class="btn-row"><button class="logout-btn" onclick="disconnectNostr()" style="background:#666;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Sign out</button><button class="logout-btn" onclick="navigateTo('settings')" style="background:#fff;color:var(--primary-red);border:1px solid var(--primary-red);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Settings</button></div>`;
+                const issueLine = (!userProfile || !userProfile.name) && lastProfileIssue
+                    ? `<div style="font-size:12px;color:#a06a00;margin-top:8px;">${lastProfileIssue}</div>`
+                    : '';
+                document.getElementById('profileLoginStatus').innerHTML = `<div class="connected-badge">✓ Connected as ${profileName}${modeLabel}</div>${lightningHtml}${issueLine}<div class="btn-row"><button class="logout-btn" onclick="openProfileModal()" style="background:#fff;color:var(--primary-red);border:1px solid var(--primary-red);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">✏️ Edit profile</button><button class="logout-btn" onclick="refreshProfile()" title="Fetch profile from relays" style="background:#fff;color:#666;border:1px solid #ccc;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">⟳ Refresh</button><button class="logout-btn" onclick="disconnectNostr()" style="background:#666;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Sign out</button><button class="logout-btn" onclick="navigateTo('settings')" style="background:#fff;color:var(--primary-red);border:1px solid var(--primary-red);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Settings</button></div>`;
                 document.getElementById('addRestaurantLoginStatus').innerHTML = '<div class="connected-badge">✓ Connected - You can add restaurants</div>';
                 document.getElementById('addRestaurantBtn').disabled = false;
                 
@@ -1858,11 +1900,63 @@
             updateReviewLoginStatus();
             if (typeof renderSettings === 'function') renderSettings();
 
-            if (nostrPublicKey && authMode !== 'extension') {
-                // Enrich profile metadata (kind 0) in the background
+            if (nostrPublicKey) {
+                // Refresh profile metadata from relays when we don't have it yet
                 fetchProfile(nostrPublicKey).then(p => {
                     if (p && !userProfile) { userProfile = p; persistAuth(); updateProfile(); }
                 }).catch(() => {});
+            }
+        }
+
+        async function refreshProfile() {
+            if (!nostrPublicKey) return;
+            lastProfileIssue = null;
+            const p = await fetchProfile(nostrPublicKey);
+            if (p) {
+                userProfile = p;
+                persistAuth();
+            }
+            updateProfile();
+            if (typeof renderSettings === 'function') renderSettings();
+        }
+
+        function openProfileModal() {
+            if (!nostrPublicKey) { alert('Connect or create an identity first.'); return; }
+            document.getElementById('profileNameInput').value = userProfile?.name || '';
+            document.getElementById('profilePictureInput').value = userProfile?.picture || '';
+            document.getElementById('profileAboutInput').value = userProfile?.about || '';
+            document.getElementById('profileModal').classList.add('active');
+        }
+        function hideProfileModal() {
+            document.getElementById('profileModal').classList.remove('active');
+        }
+
+        // Publish kind-0 metadata (name / picture / about) so relays know who you are
+        async function saveProfile() {
+            if (!nostrPublicKey) { alert('Connect or create an identity first.'); return; }
+            const name = document.getElementById('profileNameInput').value.trim();
+            const picture = document.getElementById('profilePictureInput').value.trim();
+            const about = document.getElementById('profileAboutInput').value.trim();
+            const content = { name: name || undefined, picture: picture || undefined, about: about || undefined };
+            try {
+                const template = { kind: 0, created_at: Math.floor(Date.now() / 1000), tags: [], content: JSON.stringify(content) };
+                const signed = await signWithActiveIdentity(template);
+                const results = await publishToRelays(signed, configuredRelays);
+                const okCount = results.filter(r => r.ok).length;
+                userProfile = { name: content.name || userProfile?.name, picture: content.picture || '', about: content.about || '', lud16: userProfile?.lud16, nip05: userProfile?.nip05 };
+                if (!userProfile.name) userProfile.name = null;
+                lastProfileIssue = null;
+                persistAuth();
+                updateProfile();
+                if (typeof renderSettings === 'function') renderSettings();
+                hideProfileModal();
+                if (okCount > 0) {
+                    alert(`Profile published to ${okCount} relay${okCount === 1 ? '' : 's'} ✓`);
+                } else {
+                    alert('Profile saved locally — relays unreachable (check Settings → Relays).');
+                }
+            } catch (e) {
+                alert('Failed to save profile: ' + e.message);
             }
         }
 
