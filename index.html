@@ -749,20 +749,140 @@
             color: var(--text-light);
         }
 
-        /* Sort dropdown */
-        .sort-container {
-            padding: 12px 16px;
+        /* View menu toolbar (Map / Exchange Rate) */
+        .view-toolbar {
+            padding: 10px 16px;
             background: white;
             border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
         }
 
-        .sort-select {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
+        .menu-box { position: relative; }
+
+        .menu-btn {
+            padding: 7px 14px;
+            border: 1.5px solid #e2e2e2;
+            border-radius: 999px;
+            background: #fff;
             font-size: 13px;
-            width: 100%;
+            font-weight: 600;
+            color: var(--text-dark);
+            cursor: pointer;
         }
+
+        .menu-btn .caret { font-size: 10px; color: var(--text-muted); }
+
+        .menu-list {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            background: #fff;
+            border: 1px solid #e8e8e8;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+            min-width: 170px;
+            overflow: hidden;
+            z-index: 150;
+        }
+
+        .menu-list.open { display: block; }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            font-size: 14px;
+            color: var(--text-dark);
+            cursor: pointer;
+        }
+
+        .menu-item:hover { background: #fff5f5; color: var(--primary-red); }
+
+        .menu-item + .menu-item { border-top: 1px solid #f2f2f2; }
+
+        /* Map modal */
+        .map-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 210;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .map-modal.active { display: flex; }
+        .map-box {
+            width: min(680px, 100%);
+            background: #fff;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .map-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .map-head button {
+            border: none;
+            background: #f2f2f2;
+            border-radius: 999px;
+            padding: 5px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .map-box iframe { width: 100%; height: 420px; border: none; display: block; }
+
+        /* FX modal */
+        .fx-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 210;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .fx-modal.active { display: flex; }
+        .fx-box {
+            width: min(360px, 100%);
+            background: #fff;
+            border-radius: 14px;
+            padding: 16px;
+        }
+        .fx-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .fx-head button {
+            border: none;
+            background: #f2f2f2;
+            border-radius: 999px;
+            padding: 5px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .fx-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 2px;
+            font-size: 14px;
+            border-bottom: 1px solid #f2f2f2;
+        }
+        .fx-row .cur { font-weight: 600; }
+        .fx-row .val { color: var(--primary-red); font-weight: 700; }
+        .fx-note { font-size: 11px; color: var(--text-muted); margin-top: 10px; text-align: center; }
 
         /* Empty state */
         .empty-state {
@@ -1102,7 +1222,6 @@
             <div class="search-input-wrapper">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" id="searchInput" placeholder="Search spots — tacos, karaoke, Max's">
-                <button class="filter-btn" onclick="openFilters()" title="Filters">⚙︎</button>
             </div>
             <button class="qr-chip" onclick="openQrScanner()" title="Scan QR">⌗ QR</button>
         </div>
@@ -1130,15 +1249,16 @@
         </div>
     </div>
 
-    <!-- Sort Bar -->
-    <div class="sort-container" id="sortContainer">
-        <select class="sort-select" id="sortSelect" onchange="applySort()">
-            <option value="comprehensive">Sort by: Comprehensive</option>
-            <option value="taste">Sort by: Highest TASTE</option>
-            <option value="recent">Sort by: Most Recent</option>
-            <option value="checkins">Sort by: Most Check-ins</option>
-            <option value="zapped">Sort by: Most Zapped</option>
-        </select>
+    <!-- View menu bar (replaces sort dropdown) -->
+    <div class="view-toolbar" id="viewToolbar">
+        <div class="menu-box" id="menuBox">
+            <button class="menu-btn" onclick="toggleViewMenu(event)">☰ Menu <span class="caret">▾</span></button>
+            <div class="menu-list" id="menuList">
+                <div class="menu-item" onclick="openMapModal()"><span class="mi-ico">🗺️</span>Map</div>
+                <div class="menu-item" onclick="openFxModal()"><span class="mi-ico">💱</span>Exchange Rate</div>
+                <div class="menu-item" onclick="openFilters()"><span class="mi-ico">⚙️</span>Filters</div>
+            </div>
+        </div>
     </div>
 
     <!-- Discover Page -->
@@ -1400,6 +1520,23 @@
     </div>
 
     <!-- Filters Modal -->
+    <!-- Map modal -->
+    <div class="map-modal" id="mapModal" onclick="if(event.target===this)closeMapModal()">
+        <div class="map-box">
+            <div class="map-head"><span>🗺️ Map — NYC spots</span><button onclick="closeMapModal()">Close</button></div>
+            <iframe id="mapFrame" loading="lazy" src="about:blank" data-src="https://www.openstreetmap.org/export/embed.html?bbox=-74.10%2C40.55%2C-73.75%2C40.92&layer=mapnik"></iframe>
+        </div>
+    </div>
+
+    <!-- Exchange rate modal -->
+    <div class="fx-modal" id="fxModal" onclick="if(event.target===this)closeFxModal()">
+        <div class="fx-box">
+            <div class="fx-head"><span>💱 Exchange Rate</span><button onclick="closeFxModal()">Close</button></div>
+            <div id="fxList"></div>
+            <div class="fx-note" id="fxNote"></div>
+        </div>
+    </div>
+
     <!-- QR Scan Modal -->
     <div class="qr-modal" id="qrModal" onclick="if(event.target===this)closeQrScanner()">
         <div class="qr-box">
@@ -1784,14 +1921,14 @@
 
             // Show/hide search based on page
             const searchContainer = document.getElementById('searchContainer');
-            const sortContainer = document.getElementById('sortContainer');
+            const viewToolbar = document.getElementById('viewToolbar');
             const catStrip = document.getElementById('catStrip');
             if (page === 'discover' || page === 'search') {
                 searchContainer.style.display = 'block';
-                sortContainer.style.display = 'block';
+                viewToolbar.style.display = 'flex';
             } else {
                 searchContainer.style.display = 'none';
-                sortContainer.style.display = 'none';
+                viewToolbar.style.display = 'none';
             }
             if (catStrip) catStrip.style.display = (page === 'discover') ? 'flex' : 'none';
 
@@ -2030,6 +2167,62 @@
             document.getElementById('qrModal').classList.add('active');
         }
 
+        // ===== View menu: Map + Exchange Rate =====
+        function toggleViewMenu(e) {
+            if (e) e.stopPropagation();
+            document.getElementById('menuList').classList.toggle('open');
+        }
+
+        function closeViewMenu() {
+            document.getElementById('menuList').classList.remove('open');
+        }
+
+        document.addEventListener('click', (ev) => {
+            const box = document.getElementById('menuBox');
+            if (box && !box.contains(ev.target)) closeViewMenu();
+        });
+
+        function openMapModal() {
+            closeViewMenu();
+            const f = document.getElementById('mapFrame');
+            if (f && f.src === 'about:blank') f.src = f.dataset.src;
+            document.getElementById('mapModal').classList.add('active');
+        }
+
+        function closeMapModal() {
+            document.getElementById('mapModal').classList.remove('active');
+        }
+
+        async function openFxModal() {
+            closeViewMenu();
+            const modal = document.getElementById('fxModal');
+            modal.classList.add('active');
+            const list = document.getElementById('fxList');
+            const note = document.getElementById('fxNote');
+            list.innerHTML = '<div class="fx-row"><span class="cur">Loading…</span></div>';
+            note.textContent = '';
+            try {
+                const res = await fetch('https://open.er-api.com/v6/latest/USD');
+                const data = await res.json();
+                const r = data.rates || {};
+                const rows = [
+                    ['CNY ¥', r.CNY], ['EUR €', r.EUR], ['GBP £', r.GBP],
+                    ['JPY ¥', r.JPY], ['KRW ₩', r.KRW], ['CAD $', r.CAD]
+                ].filter(x => x[1]);
+                list.innerHTML = rows.map(x =>
+                    `<div class="fx-row"><span class="cur">1 USD → ${x[0]}</span><span class="val">${x[1].toFixed(x[1] > 100 ? 0 : 2)}</span></div>`
+                ).join('');
+                note.textContent = 'Updated ' + new Date().toLocaleTimeString();
+            } catch (err) {
+                list.innerHTML = '<div class="fx-row"><span class="cur">Unavailable offline</span></div>';
+                note.textContent = 'Could not reach the rate service.';
+            }
+        }
+
+        function closeFxModal() {
+            document.getElementById('fxModal').classList.remove('active');
+        }
+
         function closeQrScanner() {
             document.getElementById('qrModal').classList.remove('active');
         }
@@ -2078,11 +2271,7 @@
         }
 
         // Sort
-        function applySort() {
-            currentSort = document.getElementById('sortSelect').value;
-            renderRestaurants();
-            renderReviews();
-        }
+        // Sort dropdown removed; default comprehensive sort kept via currentSort
 
         function sortRestaurants(list) {
             const sorted = [...list];
