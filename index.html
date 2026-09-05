@@ -910,6 +910,40 @@
         .back-btn:hover {
             background: #fff5f5;
         }
+        .btc-badge {
+            display: inline-block;
+            background: #ff9900;
+            color: #fff;
+            font-weight: 700;
+            border-radius: 999px;
+            padding: 1px 7px;
+            font-size: 12px;
+            vertical-align: middle;
+            line-height: 1.4;
+            white-space: nowrap;
+        }
+        .zap-amounts {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 6px 0 4px;
+        }
+        .zap-amt {
+            flex: 1;
+            min-width: 64px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 9px 0;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .zap-amt.active {
+            background: #ff9900;
+            border-color: #ff9900;
+            color: #fff;
+        }
     </style>
     <!-- Nostr Tools for fetching profile data -->
     <script src="https://cdn.jsdelivr.net/npm/nostr-tools@2.1.0/lib/nostr.bundle.js"></script>
@@ -1091,6 +1125,12 @@
                 <label class="form-label">Website</label>
                 <input type="text" class="form-input" id="addRestaurantWebsite" placeholder="https://...">
             </div>
+            <div class="form-group">
+                <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;">
+                    <input type="checkbox" id="addRestaurantAcceptsBtc" style="width:auto;margin:0;"> This place accepts Bitcoin
+                    <span class="btc-badge" style="font-size:11px;">₿</span>
+                </label>
+            </div>
             
                 <button class="submit-btn" id="addRestaurantBtn" onclick="addRestaurant()">Add Restaurant</button>
                 </div>
@@ -1164,6 +1204,10 @@
             <div class="form-group">
                 <label class="form-label">About</label>
                 <textarea class="form-textarea" id="profileAboutInput" placeholder="Food explorer ⚡"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Lightning address (to receive zaps)</label>
+                <input type="text" class="form-input" id="profileLud16Input" placeholder="you@getalby.com">
             </div>
             <div class="btn-row">
                 <button class="submit-btn" onclick="saveProfile()" style="flex:1;">Save &amp; publish</button>
@@ -1242,6 +1286,31 @@
         </div>
     </div>
 
+    <!-- Zap Modal -->
+    <div class="modal" id="zapModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">⚡ Send a zap</div>
+                <button class="close-btn" onclick="hideZapModal()">&times;</button>
+            </div>
+            <div style="font-size:13px;color:var(--text-light);margin-bottom:4px;">Tip this reviewer for their check-in:</div>
+            <div id="zapReviewerName" style="font-weight:700;margin-bottom:10px;"></div>
+            <div class="zap-amounts">
+                <button class="zap-amt" onclick="pickZapAmount(this,100)">100</button>
+                <button class="zap-amt" onclick="pickZapAmount(this,500)">500</button>
+                <button class="zap-amt active" onclick="pickZapAmount(this,1000)">1k</button>
+                <button class="zap-amt" onclick="pickZapAmount(this,5000)">5k</button>
+                <button class="zap-amt" onclick="pickZapAmount(this,10000)">10k</button>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">sats</div>
+            <div id="zapStatus" style="font-size:13px;margin:12px 0 6px;color:#a06a00;line-height:1.5;"></div>
+            <div class="btn-row">
+                <button class="login-btn" id="sendZapBtn" onclick="sendZap()" style="flex:1;">Send zap ⚡</button>
+                <button class="btn-secondary" id="copyZapAddrBtn" onclick="copyZapAddress()" style="flex:1;text-align:center;">Copy address</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Bottom Navigation -->
     <div class="bottom-nav">
         <div class="nav-item active" onclick="navigateTo('discover')" id="navDiscover">
@@ -1310,7 +1379,8 @@
                 avgService: 8.0,
                 avgPrice: 32,
                 checkins: 1243,
-                totalRating: 4.2
+                totalRating: 4.2,
+                acceptsBtc: true
             },
             {
                 id: 'shu-hotpot',
@@ -1329,7 +1399,8 @@
                 avgService: 8.8,
                 avgPrice: 85,
                 checkins: 892,
-                totalRating: 4.7
+                totalRating: 4.7,
+                acceptsBtc: true
             },
             {
                 id: 'green-veg',
@@ -1521,7 +1592,7 @@
                                 <span>SERVICE ${Number(rev.service).toFixed(1)}</span>
                             </div>
                         </div>
-                        <div class="review-meta"><span>${getTimeAgo(rev.timestamp)}</span></div>
+                        <div class="review-meta"><span>${getTimeAgo(rev.timestamp)}</span> · <button class="action-btn" onclick="openZapReview('${rev.id}')" style="color:#ff9900;font-weight:600;font-size:12px;">⚡ Zap</button></div>
                         ${photosHtml}
                         <div class="review-text">${rev.text}</div>
                     </div>`;
@@ -1532,7 +1603,7 @@
                     <button class="detail-hero-back" onclick="goBackFromRestaurant()">← Back</button>
                     <img src="${r.photo || ''}" alt="${r.name}" onerror="this.onerror=null;this.src='${noPhoto}'">
                     <div class="detail-hero-info">
-                        <div class="detail-name">${r.name}</div>
+                        <div class="detail-name">${r.name}${r.acceptsBtc ? ' <span class="btc-badge">₿ Bitcoin</span>' : ''}</div>
                         <div class="detail-loc">📍 ${r.neighborhood || ''}${r.city ? ', ' + r.city : ''}</div>
                     </div>
                 </div>
@@ -1549,6 +1620,7 @@
                     <div class="price-row">${checkins.toLocaleString()} check-in${checkins === 1 ? '' : 's'}${r.checkins && n ? ' · ' + r.checkins.toLocaleString() + ' all-time' : ''}</div>
                     <div class="price-row" style="margin-top:8px;">${r.cuisine.map(c => `<span class="cuisine-tag">${c}</span>`).join('')}</div>
                     ${r.description ? `<div class="price-row" style="margin-top:10px;color:var(--text-light);">${r.description}</div>` : ''}
+                    ${r.acceptsBtc ? '<div class="price-row" style="margin-top:10px;"><span class="btc-badge">₿</span> <b style="color:var(--text-dark);">Accepts Bitcoin</b> — you can pay with sats</div>' : ''}
                     ${r.website && r.website !== '#' ? `<a href="${r.website}" target="_blank" rel="noopener" class="btn-secondary" style="display:inline-block;text-decoration:none;margin-top:12px;">Visit website ↗</a>` : ''}
                 </div>
 
@@ -1574,7 +1646,7 @@
                 <div class="restaurant-card" onclick="openRestaurant('${r.id}')">
                     <img class="restaurant-photo" src="${r.photo}" alt="${r.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 180%22><rect fill=%22%23eee%22 width=%22400%22 height=%22180%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2224%22>No Photo</text></svg>'">
                     <div class="restaurant-info">
-                        <div class="restaurant-name">${r.name}</div>
+                        <div class="restaurant-name">${r.name}${r.acceptsBtc ? ' <span class="btc-badge">₿ Bitcoin</span>' : ''}</div>
                         <div class="price-row">📍 ${r.neighborhood}, ${r.city}</div>
                         <div class="scores-row">
                             <div class="score-item">
@@ -1644,7 +1716,7 @@
                         <div class="review-actions">
                             <button class="action-btn">👍 ${r.likes}</button>
                             <button class="action-btn">💬 ${r.comments}</button>
-                            <button class="action-btn zap-btn">⚡ Zap ${r.zaps.toLocaleString()} sats</button>
+                            <button class="action-btn" onclick="openZapReview('${r.id}')" style="color:#ff9900;font-weight:600;">⚡ Zap ${r.zaps.toLocaleString()} sats</button>
                         </div>
                     </div>
                 `;
@@ -1781,7 +1853,7 @@
                 container.innerHTML = results.map(r => `
                     <div class="restaurant-card" onclick="openRestaurant('${r.id}')">
                         <div class="restaurant-info">
-                            <div class="restaurant-name">${r.name}</div>
+                            <div class="restaurant-name">${r.name}${r.acceptsBtc ? ' <span class="btc-badge">₿ Bitcoin</span>' : ''}</div>
                             <div class="price-row">📍 ${r.neighborhood}, ${r.city}</div>
                             <div class="price-row">${r.priceRange} | ${r.cuisine.join(', ')}</div>
                             <div class="scores-row">
@@ -1945,7 +2017,7 @@
                         <div class="restaurant-card" onclick="openRestaurant('${r.id}')">
                             <img class="restaurant-photo" src="${r.photo}" alt="${r.name}" style="height: 120px;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 120%22><rect fill=%22%23eee%22 width=%22400%22 height=%22120%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2218%22>No Photo</text></svg>'">
                             <div class="restaurant-info">
-                                <div class="restaurant-name">${r.name}</div>
+                                <div class="restaurant-name">${r.name}${r.acceptsBtc ? ' <span class="btc-badge">₿ Bitcoin</span>' : ''}</div>
                                 <div class="price-row">📍 ${r.neighborhood}, ${r.city}</div>
                                 <div class="price-row">${r.priceRange} | ${r.cuisine.join(', ')}</div>
                             </div>
@@ -1979,6 +2051,7 @@
             const photoUrl = document.getElementById('addRestaurantPhoto').value.trim();
             const description = document.getElementById('addRestaurantDescription').value.trim();
             const website = document.getElementById('addRestaurantWebsite').value.trim();
+            const acceptsBtc = document.getElementById('addRestaurantAcceptsBtc').checked;
 
             if (!name || !neighborhood || !city || !cuisineInput) {
                 alert('Please fill in all required fields (Name, Neighborhood, City, Cuisine)');
@@ -2002,6 +2075,7 @@
                 photo,
                 description: description || 'No description available',
                 website: website || '#',
+                acceptsBtc,
                 avgTaste: 0,
                 avgEnviron: 0,
                 avgService: 0,
@@ -2028,6 +2102,7 @@
             document.getElementById('addRestaurantPhoto').value = '';
             document.getElementById('addRestaurantDescription').value = '';
             document.getElementById('addRestaurantWebsite').value = '';
+            document.getElementById('addRestaurantAcceptsBtc').checked = false;
 
             alert('Restaurant added successfully!');
         }
@@ -2114,6 +2189,7 @@
             document.getElementById('profileNameInput').value = userProfile?.name || '';
             document.getElementById('profilePictureInput').value = userProfile?.picture || '';
             document.getElementById('profileAboutInput').value = userProfile?.about || '';
+            document.getElementById('profileLud16Input').value = userProfile?.lud16 || '';
             document.getElementById('profileModal').classList.add('active');
         }
         function hideProfileModal() {
@@ -2126,13 +2202,14 @@
             const name = document.getElementById('profileNameInput').value.trim();
             const picture = document.getElementById('profilePictureInput').value.trim();
             const about = document.getElementById('profileAboutInput').value.trim();
-            const content = { name: name || undefined, picture: picture || undefined, about: about || undefined };
+            const lud16 = document.getElementById('profileLud16Input').value.trim();
+            const content = { name: name || undefined, picture: picture || undefined, about: about || undefined, lud16: lud16 || undefined };
             try {
                 const template = { kind: 0, created_at: Math.floor(Date.now() / 1000), tags: [], content: JSON.stringify(content) };
                 const signed = await signWithActiveIdentity(template);
                 const results = await publishToRelays(signed, configuredRelays);
                 const okCount = results.filter(r => r.ok).length;
-                userProfile = { name: content.name || userProfile?.name, picture: content.picture || '', about: content.about || '', lud16: userProfile?.lud16, nip05: userProfile?.nip05 };
+                userProfile = { name: content.name || userProfile?.name, picture: content.picture || '', about: content.about || '', lud16: content.lud16 || '', nip05: userProfile?.nip05 };
                 if (!userProfile.name) userProfile.name = null;
                 lastProfileIssue = null;
                 persistAuth();
@@ -2510,6 +2587,7 @@
                 photos.forEach(photo => {
                     event.tags.push(['image', photo]);
                 });
+                if (userProfile?.lud16) event.tags.push(['zap', userProfile.lud16]);
 
                 const signedEvent = await signWithActiveIdentity(event);
                 const pubResults = await publishToRelays(signedEvent, configuredRelays);
@@ -2524,6 +2602,7 @@
                     restaurantId,
                     user: `User ${nostrPublicKey.substring(0, 8)}`,
                     userPubkey: nostrPublicKey,
+                    lud16: userProfile?.lud16 || null,
                     taste,
                     environ,
                     service,
@@ -2578,6 +2657,85 @@
             if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
             if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
             return `${Math.floor(seconds / 604800)} weeks ago`;
+        }
+
+        // ===== Zap (Lightning tips for reviewers) =====
+        let zapTargetReview = null;
+        let zapSats = 1000;
+
+        function openZapReview(reviewId) {
+            zapTargetReview = reviews.find(x => x.id === reviewId) || null;
+            if (!zapTargetReview) { alert('Review not found'); return; }
+            document.getElementById('zapReviewerName').textContent = zapTargetReview.user;
+            const addr = zapTargetReview.lud16 || null;
+            const status = document.getElementById('zapStatus');
+            const sendBtn = document.getElementById('sendZapBtn');
+            const copyBtn = document.getElementById('copyZapAddrBtn');
+            if (nostrPublicKey && zapTargetReview.userPubkey === nostrPublicKey) {
+                status.textContent = 'This is your own review — nothing to zap 😉';
+                sendBtn.disabled = true;
+                copyBtn.disabled = true;
+            } else if (!addr) {
+                status.textContent = 'This reviewer hasn\'t added a Lightning address yet, so they can\'t receive zaps. (They can add one under Me → Edit profile → Lightning address.)';
+                sendBtn.disabled = true;
+                copyBtn.disabled = true;
+            } else {
+                status.textContent = 'Sending to ' + addr;
+                sendBtn.disabled = false;
+                copyBtn.disabled = false;
+            }
+            document.getElementById('zapModal').classList.add('active');
+        }
+
+        function hideZapModal() {
+            document.getElementById('zapModal').classList.remove('active');
+        }
+
+        function pickZapAmount(btn, sats) {
+            btn.parentElement.querySelectorAll('.zap-amt').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            zapSats = sats;
+        }
+
+        // Resolve a Lightning address (user@domain) or lnurl URL into a payable invoice
+        async function fetchZapInvoice(addr, msats) {
+            const url = addr.includes('@')
+                ? 'https://' + addr.split('@')[1] + '/.well-known/lnurlp/' + addr.split('@')[0]
+                : addr;
+            const meta = await (await fetch(url)).json();
+            if (!meta || !meta.callback) throw new Error((meta && meta.reason) || 'Not a valid Lightning address');
+            const cb = new URL(meta.callback);
+            cb.searchParams.set('amount', String(msats));
+            const inv = await (await fetch(cb.toString())).json();
+            if (inv.pr) return inv.pr;
+            throw new Error(inv.reason || 'Could not get an invoice');
+        }
+
+        async function sendZap() {
+            const addr = zapTargetReview && zapTargetReview.lud16;
+            if (!addr) return;
+            const status = document.getElementById('zapStatus');
+            if (!window.webln) {
+                status.textContent = 'No WebLN provider found. Install the Alby extension to send zaps.';
+                return;
+            }
+            try {
+                status.textContent = 'Contacting ' + addr + '…';
+                const invoice = await fetchZapInvoice(addr, zapSats * 1000);
+                status.textContent = 'Paying invoice…';
+                await window.webln.sendPayment(invoice);
+                status.textContent = '✅ Zap of ' + zapSats.toLocaleString() + ' sats sent to ' + zapTargetReview.user + '! ⚡';
+            } catch (e) {
+                console.warn('Zap failed:', e);
+                status.textContent = 'Zap failed: ' + (e.message || e) + ' — the address may be unreachable or the provider rejected it.';
+            }
+        }
+
+        function copyZapAddress() {
+            const addr = zapTargetReview && zapTargetReview.lud16;
+            if (!addr) { alert('No Lightning address to copy'); return; }
+            copyText(addr);
+            alert('Lightning address copied: ' + addr);
         }
     </script>
 </body>
