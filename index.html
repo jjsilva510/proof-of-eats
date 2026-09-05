@@ -823,6 +823,78 @@
         .add-restaurant-toggle:hover {
             background: #fff5f5;
         }
+
+        /* Restaurant detail page */
+        .restaurant-card {
+            cursor: pointer;
+        }
+        .detail-hero {
+            position: relative;
+            height: 210px;
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+        .detail-hero img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .detail-hero-back {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.55);
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .detail-hero-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.75));
+            color: #fff;
+            padding: 20px 14px 12px;
+        }
+        .detail-name {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .detail-loc {
+            font-size: 13px;
+            opacity: 0.92;
+            margin-top: 2px;
+        }
+        .detail-score-row {
+            display: flex;
+            gap: 10px;
+            margin: 12px 0 16px;
+        }
+        .detail-score {
+            flex: 1;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 10px 6px;
+            text-align: center;
+        }
+        .detail-score .v {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-red);
+        }
+        .detail-score .k {
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 0.4px;
+            margin-top: 2px;
+        }
     </style>
     <!-- Nostr Tools for fetching profile data -->
     <script src="https://cdn.jsdelivr.net/npm/nostr-tools@2.1.0/lib/nostr.bundle.js"></script>
@@ -1099,6 +1171,11 @@
         </div>
     </div>
 
+    <!-- Restaurant Detail Page -->
+    <div class="page" id="restaurantPage">
+        <div class="form-container" id="restaurantDetail"></div>
+    </div>
+
     <!-- Filters Modal -->
     <div class="modal" id="filtersModal">
         <div class="modal-content">
@@ -1340,8 +1417,11 @@
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             
-            document.getElementById(page + 'Page').classList.add('active');
-            document.getElementById('nav' + page.charAt(0).toUpperCase() + page.slice(1)).classList.add('active');
+            const targetPage = document.getElementById(page + 'Page');
+            if (!targetPage) return;
+            targetPage.classList.add('active');
+            const navEl = document.getElementById('nav' + page.charAt(0).toUpperCase() + page.slice(1));
+            if (navEl) navEl.classList.add('active');
 
             // Show/hide search based on page
             const searchContainer = document.getElementById('searchContainer');
@@ -1368,6 +1448,99 @@
             }
         }
 
+        // ===== Restaurant detail page =====
+        let restaurantSourcePage = 'discover';
+
+        function openRestaurant(restaurantId) {
+            const r = restaurants.find(x => x.id === restaurantId);
+            if (!r) { alert('Restaurant not found'); return; }
+            document.querySelectorAll('.page').forEach(p => { if (p.classList.contains('active')) restaurantSourcePage = p.id.replace('Page', ''); });
+            if (restaurantSourcePage === 'restaurant') restaurantSourcePage = 'discover';
+            renderRestaurantDetail(r);
+            navigateTo('restaurant');
+            const backNav = document.getElementById('nav' + restaurantSourcePage.charAt(0).toUpperCase() + restaurantSourcePage.slice(1));
+            if (backNav) backNav.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function goBackFromRestaurant() {
+            navigateTo(restaurantSourcePage);
+        }
+
+        function writeReviewForRestaurant(restaurantId) {
+            navigateTo('review');
+            const select = document.getElementById('reviewRestaurant');
+            if (select) select.value = restaurantId;
+            window.scrollTo(0, 0);
+        }
+
+        function renderRestaurantDetail(r) {
+            const el = document.getElementById('restaurantDetail');
+            const reviewsFor = reviews.filter(rev => rev.restaurantId === r.id);
+            const n = reviewsFor.length;
+            const checkins = n || r.checkins || 0;
+            const noPhoto = "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 800 300%22><rect fill=%22%23e8e8e8%22 width=%22800%22 height=%22300%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2230%22>No Photo</text></svg>";
+            const hasScores = r.avgTaste || r.avgEnviron || r.avgService;
+            const ratingLine = hasScores
+                ? `${'★'.repeat(Math.min(5, Math.max(0, Math.round(r.totalRating || (r.avgTaste + r.avgEnviron + r.avgService) / 3 / 2))))} ${(r.totalRating || ((r.avgTaste + r.avgEnviron + r.avgService) / 3 / 2)).toFixed(1)}/5`
+                : 'New spot — no ratings yet';
+            const reviewsHtml = n === 0
+                ? `<div class="empty-state"><div class="empty-state-icon">📝</div><div>No reviews yet — be the first to review this spot</div></div>`
+                : reviewsFor.map(rev => {
+                    const initials = (rev.user || '?').substring(0, 2).toUpperCase();
+                    const photosHtml = rev.photos && rev.photos.length > 0
+                        ? `<div class="review-photos">${rev.photos.slice(0, 3).map(p => `<img class="review-photo" src="${p}" onclick="window.open('${p}', '_blank')">`).join('')}</div>`
+                        : '';
+                    return `<div class="review-card" style="margin-top:10px;">
+                        <div class="review-header">
+                            <div class="reviewer-info">
+                                <div class="reviewer-avatar">${initials}</div>
+                                <div class="reviewer-name">${rev.user}</div>
+                            </div>
+                            <div class="review-scores">
+                                <span>TASTE ${Number(rev.taste).toFixed(1)}</span>
+                                <span>ENVIRON ${Number(rev.environ).toFixed(1)}</span>
+                                <span>SERVICE ${Number(rev.service).toFixed(1)}</span>
+                            </div>
+                        </div>
+                        <div class="review-meta"><span>${getTimeAgo(rev.timestamp)}</span></div>
+                        ${photosHtml}
+                        <div class="review-text">${rev.text}</div>
+                    </div>`;
+                }).join('');
+
+            el.innerHTML = `
+                <div class="detail-hero" style="margin-top:8px;">
+                    <button class="detail-hero-back" onclick="goBackFromRestaurant()">← Back</button>
+                    <img src="${r.photo || ''}" alt="${r.name}" onerror="this.onerror=null;this.src='${noPhoto}'">
+                    <div class="detail-hero-info">
+                        <div class="detail-name">${r.name}</div>
+                        <div class="detail-loc">📍 ${r.neighborhood || ''}${r.city ? ', ' + r.city : ''}</div>
+                    </div>
+                </div>
+
+                <div class="detail-score-row">
+                    <div class="detail-score"><div class="v">${Number(r.avgTaste || 0).toFixed(1)}</div><div class="k">TASTE</div></div>
+                    <div class="detail-score"><div class="v">${Number(r.avgEnviron || 0).toFixed(1)}</div><div class="k">ENVIRON</div></div>
+                    <div class="detail-score"><div class="v">${Number(r.avgService || 0).toFixed(1)}</div><div class="k">SERVICE</div></div>
+                </div>
+
+                <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:14px;margin-bottom:14px;">
+                    <div class="price-row" style="font-weight:600;">${ratingLine}</div>
+                    <div class="price-row">${r.priceRange || ''}${r.avgPrice ? ' · $' + Math.round(r.avgPrice) + ' per person' : ''}</div>
+                    <div class="price-row">${checkins.toLocaleString()} check-in${checkins === 1 ? '' : 's'}${r.checkins && n ? ' · ' + r.checkins.toLocaleString() + ' all-time' : ''}</div>
+                    <div class="price-row" style="margin-top:8px;">${r.cuisine.map(c => `<span class="cuisine-tag">${c}</span>`).join('')}</div>
+                    ${r.description ? `<div class="price-row" style="margin-top:10px;color:var(--text-light);">${r.description}</div>` : ''}
+                    ${r.website && r.website !== '#' ? `<a href="${r.website}" target="_blank" rel="noopener" class="btn-secondary" style="display:inline-block;text-decoration:none;margin-top:12px;">Visit website ↗</a>` : ''}
+                </div>
+
+                <button class="submit-btn" style="width:100%;" onclick="writeReviewForRestaurant('${r.id}')">✏️ Write a Review</button>
+
+                <h3 style="margin:18px 0 4px;font-size:15px;">Reviews (${n || checkins})</h3>
+                ${reviewsHtml}
+            `;
+        }
+
         // Render Functions
         function renderRestaurants() {
             const container = document.getElementById('restaurantList');
@@ -1380,7 +1553,7 @@
             }
 
             container.innerHTML = sorted.map(r => `
-                <div class="restaurant-card">
+                <div class="restaurant-card" onclick="openRestaurant('${r.id}')">
                     <img class="restaurant-photo" src="${r.photo}" alt="${r.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 180%22><rect fill=%22%23eee%22 width=%22400%22 height=%22180%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2224%22>No Photo</text></svg>'">
                     <div class="restaurant-info">
                         <div class="restaurant-name">${r.name}</div>
@@ -1588,7 +1761,7 @@
                 container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div>No restaurants found</div></div>';
             } else {
                 container.innerHTML = results.map(r => `
-                    <div class="restaurant-card">
+                    <div class="restaurant-card" onclick="openRestaurant('${r.id}')">
                         <div class="restaurant-info">
                             <div class="restaurant-name">${r.name}</div>
                             <div class="price-row">📍 ${r.neighborhood}, ${r.city}</div>
@@ -1751,7 +1924,7 @@
                     userAddedContainer.innerHTML = '<div class="empty-state"><div>No restaurants added yet</div></div>';
                 } else {
                     userAddedContainer.innerHTML = userRestaurants.map(r => `
-                        <div class="restaurant-card">
+                        <div class="restaurant-card" onclick="openRestaurant('${r.id}')">
                             <img class="restaurant-photo" src="${r.photo}" alt="${r.name}" style="height: 120px;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 120%22><rect fill=%22%23eee%22 width=%22400%22 height=%22120%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2218%22>No Photo</text></svg>'">
                             <div class="restaurant-info">
                                 <div class="restaurant-name">${r.name}</div>
