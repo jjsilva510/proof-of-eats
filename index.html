@@ -944,6 +944,51 @@
             border-color: #ff9900;
             color: #fff;
         }
+        /* Dianping-style category strip */
+        .cat-strip {
+            display: flex;
+            gap: 14px;
+            overflow-x: auto;
+            padding: 12px 16px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            scrollbar-width: none;
+        }
+        .cat-strip::-webkit-scrollbar { display: none; }
+        .cat-item {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .cat-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+            border: 2px solid transparent;
+            transition: background .15s, border-color .15s;
+        }
+        .cat-item:hover .cat-icon { background: #fafafa; }
+        .cat-label {
+            font-size: 11px;
+            color: var(--text-light);
+        }
+        .cat-item.active .cat-icon {
+            background: #fff1f0;
+            border-color: var(--primary-red);
+        }
+        .cat-item.active .cat-label {
+            color: var(--primary-red);
+            font-weight: 600;
+        }
     </style>
     <!-- Nostr Tools for fetching profile data -->
     <script src="https://cdn.jsdelivr.net/npm/nostr-tools@2.1.0/lib/nostr.bundle.js"></script>
@@ -975,6 +1020,28 @@
             </div>
             <button class="search-btn" onclick="performSearch()">Search</button>
             <button class="filter-btn" onclick="openFilters()">⚙️ Filter</button>
+        </div>
+    </div>
+
+    <!-- Category strip (Dianping-style) -->
+    <div class="cat-strip" id="catStrip">
+        <div class="cat-item active" data-cat="all" onclick="setCategory('all')">
+            <div class="cat-icon">🌐</div><div class="cat-label">All</div>
+        </div>
+        <div class="cat-item" data-cat="food" onclick="setCategory('food')">
+            <div class="cat-icon">🍜</div><div class="cat-label">Food</div>
+        </div>
+        <div class="cat-item" data-cat="bars" onclick="setCategory('bars')">
+            <div class="cat-icon">🍺</div><div class="cat-label">Bars</div>
+        </div>
+        <div class="cat-item" data-cat="luxury" onclick="setCategory('luxury')">
+            <div class="cat-icon">💎</div><div class="cat-label">Luxury</div>
+        </div>
+        <div class="cat-item" data-cat="sightseeing" onclick="setCategory('sightseeing')">
+            <div class="cat-icon">🗽</div><div class="cat-label">Sightseeing</div>
+        </div>
+        <div class="cat-item" data-cat="localfun" onclick="setCategory('localfun')">
+            <div class="cat-icon">🎡</div><div class="cat-label">Local Fun</div>
         </div>
     </div>
 
@@ -1099,6 +1166,17 @@
             <div class="form-group">
                 <label class="form-label">Cuisine (comma separated) *</label>
                 <input type="text" class="form-input" id="addRestaurantCuisine" placeholder="e.g., Italian, Pizza">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Category *</label>
+                <select class="form-select" id="addRestaurantCategory">
+                    <option value="food" selected>🍜 Food</option>
+                    <option value="bars">🍺 Bars</option>
+                    <option value="luxury">💎 Luxury</option>
+                    <option value="sightseeing">🗽 Sightseeing</option>
+                    <option value="localfun">🎡 Local Fun</option>
+                </select>
             </div>
             
             <div class="form-group">
@@ -1359,6 +1437,20 @@
             hasPhotosOnly: false
         };
         let currentSort = 'comprehensive';
+        let activeCategory = 'all';
+        const CATS = {
+            food: { label: 'Food', icon: '🍜' },
+            bars: { label: 'Bars', icon: '🍺' },
+            luxury: { label: 'Luxury', icon: '💎' },
+            sightseeing: { label: 'Sightseeing', icon: '🗽' },
+            localfun: { label: 'Local Fun', icon: '🎡' }
+        };
+        function catLabel(r) { return (CATS[r.category || 'food'] || CATS.food).label; }
+        function setCategory(cat) {
+            activeCategory = cat;
+            document.querySelectorAll('#catStrip .cat-item').forEach(el => el.classList.toggle('active', el.dataset.cat === cat));
+            renderRestaurants();
+        }
 
         // Demo Data
         const demoRestaurants = [
@@ -1367,6 +1459,7 @@
                 name: 'Old Beijing Noodles',
                 photo: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=400',
                 cuisine: ['Chinese', 'Noodles'],
+                category: 'food',
                 priceRange: '$$',
                 location: 'New York, NY',
                 address: '123 Mott Street',
@@ -1387,6 +1480,7 @@
                 name: 'Shu Hotpot',
                 photo: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=400',
                 cuisine: ['Sichuan', 'Hotpot'],
+                category: 'food',
                 priceRange: '$$$',
                 location: 'Flushing, NY',
                 address: '136-20 Roosevelt Ave',
@@ -1419,7 +1513,91 @@
                 avgService: 8.5,
                 avgPrice: 45,
                 checkins: 567,
-                totalRating: 4.5
+                totalRating: 4.5,
+                category: 'food'
+            },
+            {
+                id: 'hidden-barrel',
+                name: 'The Hidden Barrel',
+                photo: 'https://images.unsplash.com/photo-1514933808959-dc5037f0f984?w=400',
+                cuisine: ['Cocktails', 'Whiskey', 'Live Jazz'],
+                category: 'bars',
+                priceRange: '$$',
+                location: 'Brooklyn, NY',
+                address: '78 Franklin St',
+                neighborhood: 'Greenpoint',
+                city: 'Brooklyn',
+                website: 'https://example.com',
+                description: 'Speakeasy-style cocktail bar with rotating rare pours and late-night jazz sets.',
+                avgTaste: 8.7,
+                avgEnviron: 9.1,
+                avgService: 8.4,
+                avgPrice: 28,
+                checkins: 731,
+                totalRating: 4.4,
+                acceptsBtc: true
+            },
+            {
+                id: 'gilded-room',
+                name: 'The Gilded Room',
+                photo: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400',
+                cuisine: ['Tasting Menu', 'Fine Dining'],
+                category: 'luxury',
+                priceRange: '$$$$',
+                location: 'Manhattan, NY',
+                address: '1 Fifth Ave',
+                neighborhood: 'Midtown',
+                city: 'New York',
+                website: 'https://example.com',
+                description: '12-course omakase-style tasting menu, sommelier pairings, white-glove service.',
+                avgTaste: 9.6,
+                avgEnviron: 9.8,
+                avgService: 9.7,
+                avgPrice: 320,
+                checkins: 214,
+                totalRating: 4.9,
+                acceptsBtc: true
+            },
+            {
+                id: 'harborview-walk',
+                name: 'Harborview Promenade',
+                photo: 'https://images.unsplash.com/photo-1501594907352-04cda38b9dd9?w=400',
+                cuisine: ['Views', 'Sunset Spot'],
+                category: 'sightseeing',
+                priceRange: '$',
+                location: 'Staten Island, NY',
+                address: 'Bay St & West St',
+                neighborhood: 'Saint George',
+                city: 'Staten Island',
+                website: 'https://example.com',
+                description: 'Waterfront walk with the best skyline shot in the boroughs — free and golden at dusk.',
+                avgTaste: 7.5,
+                avgEnviron: 9.4,
+                avgService: 6.0,
+                avgPrice: 5,
+                checkins: 1892,
+                totalRating: 4.6
+            },
+            {
+                id: 'arcade-club',
+                name: 'Arcade Club BK',
+                photo: 'https://images.unsplash.com/photo-1511882150382-8bb7763b30a3?w=400',
+                cuisine: ['Arcade', 'Karaoke', 'Darts'],
+                category: 'localfun',
+                priceRange: '$$',
+                location: 'Brooklyn, NY',
+                address: '221 Troutman St',
+                neighborhood: 'Bushwick',
+                city: 'Brooklyn',
+                website: 'https://example.com',
+                description: 'Retro cabinets, karaoke rooms, and pinball leagues. Nightly events, weekly tournaments.',
+                avgTaste: 8.2,
+                avgEnviron: 8.8,
+                avgService: 7.9,
+                avgPrice: 24,
+                checkins: 645,
+                totalRating: 4.3,
+                acceptsBtc: true
             }
         ];
 
@@ -1505,6 +1683,7 @@
             // Show/hide search based on page
             const searchContainer = document.getElementById('searchContainer');
             const sortContainer = document.getElementById('sortContainer');
+            const catStrip = document.getElementById('catStrip');
             if (page === 'discover' || page === 'search') {
                 searchContainer.style.display = 'block';
                 sortContainer.style.display = 'block';
@@ -1512,6 +1691,7 @@
                 searchContainer.style.display = 'none';
                 sortContainer.style.display = 'none';
             }
+            if (catStrip) catStrip.style.display = (page === 'discover') ? 'flex' : 'none';
 
             if (page === 'search') {
                 document.getElementById('searchInput').focus();
@@ -1666,6 +1846,7 @@
                         <div class="price-row">${r.priceRange} / $${r.avgPrice} per person</div>
                         <div class="stats-row">${r.checkins.toLocaleString()} reviews | ${r.checkins.toLocaleString()} check-ins</div>
                         <div class="cuisine-tags">
+                            <span class="cuisine-tag" style="background:#fff1f0;color:var(--primary-red)">${catLabel(r)}</span>
                             ${r.cuisine.map(c => `<span class="cuisine-tag">${c}</span>`).join('')}
                         </div>
                     </div>
@@ -1766,6 +1947,7 @@
 
         function filterRestaurants(list) {
             return list.filter(r => {
+                if (activeCategory !== 'all' && (r.category || 'food') !== activeCategory) return false;
                 if (r.avgTaste < currentFilter.tasteMin) return false;
                 if (r.avgEnviron < currentFilter.environMin) return false;
                 if (r.avgService < currentFilter.serviceMin) return false;
@@ -1831,6 +2013,8 @@
             const whereQuery = document.getElementById('locationInput').value.toLowerCase().trim();
             
             const results = restaurants.filter(r => {
+                // Respect the active category chip from Discover
+                if (activeCategory !== 'all' && (r.category || 'food') !== activeCategory) return false;
                 // Match "what" field (restaurant name, cuisine)
                 const matchesWhat = !whatQuery || 
                     r.name.toLowerCase().includes(whatQuery) ||
@@ -2047,6 +2231,7 @@
             const neighborhood = document.getElementById('addRestaurantNeighborhood').value.trim();
             const city = document.getElementById('addRestaurantCity').value.trim();
             const cuisineInput = document.getElementById('addRestaurantCuisine').value.trim();
+            const category = document.getElementById('addRestaurantCategory').value;
             const priceRange = document.getElementById('addRestaurantPrice').value;
             const photoUrl = document.getElementById('addRestaurantPhoto').value.trim();
             const description = document.getElementById('addRestaurantDescription').value.trim();
@@ -2071,6 +2256,7 @@
                 city,
                 location: `${city}, ${neighborhood}`,
                 cuisine,
+                category,
                 priceRange,
                 photo,
                 description: description || 'No description available',
@@ -2098,6 +2284,7 @@
             document.getElementById('addRestaurantNeighborhood').value = '';
             document.getElementById('addRestaurantCity').value = '';
             document.getElementById('addRestaurantCuisine').value = '';
+            document.getElementById('addRestaurantCategory').value = 'food';
             document.getElementById('addRestaurantPrice').value = '$$';
             document.getElementById('addRestaurantPhoto').value = '';
             document.getElementById('addRestaurantDescription').value = '';
