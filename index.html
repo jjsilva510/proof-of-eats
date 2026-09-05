@@ -34,7 +34,7 @@
         .header {
             background: var(--primary-red);
             color: white;
-            padding: 12px 16px;
+            padding: 14px 20px;
             position: sticky;
             top: 0;
             z-index: 100;
@@ -48,38 +48,34 @@
         .header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
         }
 
-        .home-btn {
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
+        .brand-name {
             cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: background 0.2s;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin: 0;
+            line-height: 1.2;
         }
-
-        .home-btn:hover {
-            background: rgba(255,255,255,0.3);
+        .brand-name:hover {
+            opacity: 0.9;
         }
 
         .header h1 {
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
             margin: 0;
+            line-height: 1.2;
         }
 
         .header .tagline {
-            font-size: 11px;
-            opacity: 0.9;
-            margin-top: 2px;
+            font-size: 12px;
+            opacity: 0.92;
+            margin-top: 4px;
+            letter-spacing: 0.4px;
         }
 
         /* Search Bar - Yelp Style */
@@ -996,14 +992,9 @@
 <body>
     <!-- Header -->
     <div class="header">
-        <div class="header-left">
-            <button class="home-btn" onclick="navigateTo('discover')" title="Home">
-                🏠 Home
-            </button>
-            <div>
-                <h1>Proof of Eat</h1>
-                <div class="tagline">Real reviews. Honest scores. Lightning fast.</div>
-            </div>
+        <div>
+            <h1 class="brand-name" onclick="navigateTo('discover')" title="Proof of Eat — Home">Proof of Eat</h1>
+            <div class="tagline">Real reviews. Honest scores. Lightning fast.</div>
         </div>
     </div>
 
@@ -1659,8 +1650,16 @@
             }
         ];
 
+        function syncStickySearch() {
+            const header = document.querySelector('.header');
+            const search = document.getElementById('searchContainer');
+            if (header && search) search.style.top = header.offsetHeight + 'px';
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            syncStickySearch();
+            window.addEventListener('resize', syncStickySearch);
             restaurants = [...demoRestaurants];
             reviews = [...demoReviews];
             renderRestaurants();
