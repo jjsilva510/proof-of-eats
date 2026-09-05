@@ -895,6 +895,21 @@
             letter-spacing: 0.4px;
             margin-top: 2px;
         }
+        .back-btn {
+            display: inline-block;
+            background: #fff;
+            color: var(--primary-red);
+            border: 1px solid #ddd;
+            border-radius: 999px;
+            padding: 7px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 14px;
+        }
+        .back-btn:hover {
+            background: #fff5f5;
+        }
     </style>
     <!-- Nostr Tools for fetching profile data -->
     <script src="https://cdn.jsdelivr.net/npm/nostr-tools@2.1.0/lib/nostr.bundle.js"></script>
@@ -954,6 +969,7 @@
     <!-- Review Form Page -->
     <div class="page" id="reviewPage">
         <div class="form-container">
+            <button class="back-btn" onclick="goBackFromReview()">← Back</button>
             <h2 style="margin-bottom: 20px; font-size: 18px;">Write Review</h2>
             
             <div id="reviewLoginStatus"></div>
@@ -1232,14 +1248,6 @@
             <div class="nav-icon">🏠</div>
             <div>DISCOVER</div>
         </div>
-        <div class="nav-item" onclick="navigateTo('search')" id="navSearch">
-            <div class="nav-icon">🔍</div>
-            <div>SEARCH</div>
-        </div>
-        <div class="nav-item" onclick="navigateTo('review')" id="navReview">
-            <div class="nav-icon">✏️</div>
-            <div>REVIEW</div>
-        </div>
         <div class="nav-item" onclick="navigateTo('profile')" id="navProfile">
             <div class="nav-icon">👤</div>
             <div>ME</div>
@@ -1464,10 +1472,20 @@
         }
 
         function goBackFromRestaurant() {
-            navigateTo(restaurantSourcePage);
+            navigateTo('discover');
+        }
+
+        let fromRestaurantId = null;
+        function goBackFromReview() {
+            if (fromRestaurantId) {
+                openRestaurant(fromRestaurantId);
+            } else {
+                navigateTo('discover');
+            }
         }
 
         function writeReviewForRestaurant(restaurantId) {
+            fromRestaurantId = restaurantId;
             navigateTo('review');
             const select = document.getElementById('reviewRestaurant');
             if (select) select.value = restaurantId;
