@@ -807,6 +807,22 @@
             margin-bottom: 16px;
             font-size: 13px;
         }
+
+        .add-restaurant-toggle {
+            width: 100%;
+            background: #fff;
+            border: 1.5px dashed var(--primary-red);
+            color: var(--primary-red);
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .add-restaurant-toggle:hover {
+            background: #fff5f5;
+        }
     </style>
     <!-- Nostr Tools for fetching profile data -->
     <script src="https://cdn.jsdelivr.net/npm/nostr-tools@2.1.0/lib/nostr.bundle.js"></script>
@@ -937,8 +953,10 @@
         
         <!-- Add Restaurant Section -->
         <div class="form-container">
-            <h3 style="margin: 20px 0 12px; font-size: 16px;">Add a Restaurant</h3>
-            <div id="addRestaurantLoginStatus"></div>
+            <button class="add-restaurant-toggle" id="addRestaurantToggle" onclick="toggleAddRestaurantForm()">＋ Add a Restaurant</button>
+            <div id="addRestaurantFormWrap" style="display:none;">
+                <div id="addRestaurantLoginStatus"></div>
+                <div id="addRestaurantFields" style="display:none;">
             
             <div class="form-group">
                 <label class="form-label">Restaurant Name *</label>
@@ -990,7 +1008,9 @@
                 <input type="text" class="form-input" id="addRestaurantWebsite" placeholder="https://...">
             </div>
             
-            <button class="submit-btn" id="addRestaurantBtn" onclick="addRestaurant()">Add Restaurant</button>
+                <button class="submit-btn" id="addRestaurantBtn" onclick="addRestaurant()">Add Restaurant</button>
+                </div>
+            </div>
         </div>
         
         <!-- User's Added Restaurants -->
@@ -1732,8 +1752,7 @@
                     ? `<div style="font-size:12px;color:#a06a00;margin-top:8px;">${lastProfileIssue}</div>`
                     : '';
                 document.getElementById('profileLoginStatus').innerHTML = `<div class="connected-badge">✓ Connected as ${profileName}${modeLabel}</div>${lightningHtml}${issueLine}<div class="btn-row"><button class="logout-btn" onclick="openProfileModal()" style="background:#fff;color:var(--primary-red);border:1px solid var(--primary-red);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">✏️ Edit profile</button><button class="logout-btn" onclick="refreshProfile()" title="Fetch profile from relays" style="background:#fff;color:#666;border:1px solid #ccc;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">⟳ Refresh</button><button class="logout-btn" onclick="disconnectNostr()" style="background:#666;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Sign out</button><button class="logout-btn" onclick="navigateTo('settings')" style="background:#fff;color:var(--primary-red);border:1px solid var(--primary-red);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Settings</button></div>`;
-                document.getElementById('addRestaurantLoginStatus').innerHTML = '<div class="connected-badge">✓ Connected - You can add restaurants</div>';
-                document.getElementById('addRestaurantBtn').disabled = false;
+                renderAddRestaurantStatus();
                 
                 const userReviews = reviews.filter(r => r.userPubkey === nostrPublicKey);
                 document.getElementById('profileReviews').textContent = userReviews.length;
@@ -1763,8 +1782,7 @@
                 document.getElementById('profileAvatar').textContent = '?';
                 document.getElementById('profileName').textContent = 'Not Connected';
                 document.getElementById('profileLoginStatus').innerHTML = loginCtaHtml();
-                document.getElementById('addRestaurantLoginStatus').innerHTML = '';
-                document.getElementById('addRestaurantBtn').disabled = true;
+                renderAddRestaurantStatus();
                 document.getElementById('profileReviews').textContent = '0';
                 document.getElementById('profileCheckins').textContent = '0';
                 document.getElementById('profileZaps').textContent = '0';
@@ -2189,6 +2207,32 @@
                 + '<div class="btn-row"><button class="login-btn" onclick="createIdentity()" style="flex:1;">⚡ Create free identity</button>' + albyBtn + '</div>'
                 + '<div style="margin-top:8px;font-size:12px;color:#999;">Already have a key? Import it in Settings.</div>'
                 + '</div>';
+        }
+
+        // Add Restaurant: show the form only after tapping the button
+        function toggleAddRestaurantForm() {
+            const wrap = document.getElementById('addRestaurantFormWrap');
+            const show = wrap.style.display === 'none';
+            if (show) {
+                wrap.style.display = 'block';
+                renderAddRestaurantStatus();
+            } else {
+                wrap.style.display = 'none';
+            }
+        }
+        function renderAddRestaurantStatus() {
+            const fields = document.getElementById('addRestaurantFields');
+            const btn = document.getElementById('addRestaurantBtn');
+            const status = document.getElementById('addRestaurantLoginStatus');
+            if (nostrPublicKey) {
+                status.innerHTML = '<div class="connected-badge">✓ Connected - You can add restaurants</div>';
+                fields.style.display = 'block';
+                btn.disabled = false;
+            } else {
+                status.innerHTML = loginCtaHtml();
+                fields.style.display = 'none';
+                btn.disabled = true;
+            }
         }
         
         function renderRelayList() {
