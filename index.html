@@ -88,12 +88,12 @@
             z-index: 99;
         }
 
+        /* Style 4 — compact header: bordered pill + QR chip */
         .search-box {
             display: flex;
-            gap: 8px;
-            background: #f5f5f5;
-            border-radius: 8px;
-            padding: 4px;
+            align-items: center;
+            gap: 10px;
+            background: white;
         }
 
         .search-input-wrapper {
@@ -101,9 +101,10 @@
             display: flex;
             align-items: center;
             background: white;
-            border-radius: 6px;
-            padding: 8px 12px;
-            border: 2px solid transparent;
+            border-radius: 999px;
+            padding: 9px 14px;
+            border: 1.5px solid #e2e2e2;
+            transition: border-color .15s;
         }
 
         .search-input-wrapper:focus-within {
@@ -111,7 +112,7 @@
         }
 
         .search-icon {
-            font-size: 16px;
+            font-size: 14px;
             margin-right: 8px;
             color: var(--text-muted);
         }
@@ -119,13 +120,103 @@
         .search-input {
             flex: 1;
             border: none;
-            font-size: 14px;
+            font-size: 13px;
             outline: none;
             background: transparent;
         }
 
         .search-input::placeholder {
             color: var(--text-muted);
+        }
+
+        .qr-chip {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary-red);
+            border: 1.5px solid var(--primary-red);
+            border-radius: 999px;
+            padding: 6px 12px;
+            background: #fff;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .qr-chip:hover {
+            background: #fff1f0;
+        }
+
+        .filter-btn {
+            background: none;
+            border: none;
+            font-size: 15px;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0 2px;
+        }
+
+        .filter-btn:hover {
+            color: var(--primary-red);
+        }
+
+        /* QR scan modal */
+        .qr-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        .qr-modal.active { display: flex; }
+        .qr-box {
+            width: 260px;
+            background: #111;
+            border-radius: 16px;
+            padding: 18px;
+            text-align: center;
+            color: #fff;
+        }
+        .qr-view {
+            height: 200px;
+            border-radius: 12px;
+            background: repeating-linear-gradient(45deg, #1c1c1c, #1c1c1c 8px, #161616 8px, #161616 16px);
+            position: relative;
+            margin-bottom: 14px;
+        }
+        .qr-view::before, .qr-view::after {
+            content: "";
+            position: absolute;
+            width: 34px;
+            height: 34px;
+            border: 2px solid var(--primary-red);
+        }
+        .qr-view::before { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+        .qr-view::after { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+        .qr-line {
+            position: absolute;
+            left: 12px;
+            right: 12px;
+            top: 50%;
+            height: 2px;
+            background: var(--primary-red);
+            box-shadow: 0 0 8px var(--primary-red);
+            animation: qrSweep 2s ease-in-out infinite alternate;
+        }
+        @keyframes qrSweep { from { top: 18%; } to { top: 82%; } }
+        .qr-box p { font-size: 12px; color: #bbb; margin-bottom: 12px; }
+        .qr-close {
+            background: #222;
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 999px;
+            padding: 8px 18px;
+            font-size: 13px;
+            cursor: pointer;
         }
 
         .location-input-wrapper {
@@ -1010,10 +1101,10 @@
         <div class="search-box">
             <div class="search-input-wrapper">
                 <span class="search-icon">🔍</span>
-                <input type="text" class="search-input" id="searchInput" placeholder="Tacos, karaoke, rooftop bars, Max's">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search spots — tacos, karaoke, Max's">
+                <button class="filter-btn" onclick="openFilters()" title="Filters">⚙︎</button>
             </div>
-            <button class="search-btn" onclick="performSearch()">Search</button>
-            <button class="filter-btn" onclick="openFilters()">⚙️ Filter</button>
+            <button class="qr-chip" onclick="openQrScanner()" title="Scan QR">⌗ QR</button>
         </div>
     </div>
 
@@ -1309,6 +1400,15 @@
     </div>
 
     <!-- Filters Modal -->
+    <!-- QR Scan Modal -->
+    <div class="qr-modal" id="qrModal" onclick="if(event.target===this)closeQrScanner()">
+        <div class="qr-box">
+            <div class="qr-view"><div class="qr-line"></div></div>
+            <p>Point at a Proof of Eat table QR to load this spot’s menu and reviews.</p>
+            <button class="qr-close" onclick="closeQrScanner()">Close</button>
+        </div>
+    </div>
+
     <div class="modal" id="filtersModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1924,6 +2024,14 @@
         // Filters
         function openFilters() {
             document.getElementById('filtersModal').classList.add('active');
+        }
+
+        function openQrScanner() {
+            document.getElementById('qrModal').classList.add('active');
+        }
+
+        function closeQrScanner() {
+            document.getElementById('qrModal').classList.remove('active');
         }
 
         function closeFilters() {
