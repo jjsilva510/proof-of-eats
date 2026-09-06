@@ -755,10 +755,15 @@
             background: white;
             border-bottom: 1px solid #eee;
             display: flex;
+            flex-wrap: wrap;
             justify-content: flex-end;
         }
 
-        .menu-box { position: relative; }
+        .menu-box {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+        }
 
         .menu-btn {
             padding: 7px 14px;
@@ -773,35 +778,35 @@
 
         .menu-btn .caret { font-size: 10px; color: var(--text-muted); }
 
-        .menu-list {
+        .menu-tiles {
             display: none;
-            position: absolute;
-            right: 0;
-            top: calc(100% + 6px);
-            background: #fff;
-            border: 1px solid #e8e8e8;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.14);
-            min-width: 170px;
-            overflow: hidden;
-            z-index: 150;
+            width: 100%;
+            gap: 10px;
+            margin-top: 10px;
         }
 
-        .menu-list.open { display: block; }
+        .menu-tiles.open { display: flex; }
 
-        .menu-item {
+        .tile {
+            flex: 1;
+            border: 1.5px solid #e2e2e2;
+            border-radius: 12px;
+            background: #fff;
+            padding: 12px 6px;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
-            padding: 12px 14px;
-            font-size: 14px;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
             color: var(--text-dark);
             cursor: pointer;
+            transition: border-color .15s, background .15s;
         }
 
-        .menu-item:hover { background: #fff5f5; color: var(--primary-red); }
+        .tile:hover { border-color: var(--primary-red); background: #fff5f5; color: var(--primary-red); }
 
-        .menu-item + .menu-item { border-top: 1px solid #f2f2f2; }
+        .t-ico { font-size: 20px; }
 
         /* Map modal */
         .map-modal {
@@ -852,10 +857,35 @@
         }
         .fx-modal.active { display: flex; }
         .fx-box {
-            width: min(360px, 100%);
+            width: min(460px, 100%);
             background: #fff;
             border-radius: 14px;
-            padding: 16px;
+            padding: 18px;
+        }
+
+        .fx-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .fx-chip {
+            border: 1.5px solid #e2e2e2;
+            border-radius: 999px;
+            padding: 6px 13px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #555;
+            cursor: pointer;
+            background: #fff;
+            user-select: none;
+        }
+
+        .fx-chip.active {
+            border-color: var(--primary-red);
+            color: var(--primary-red);
+            background: #fff1f0;
         }
         .fx-head {
             display: flex;
@@ -876,8 +906,8 @@
         .fx-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 2px;
-            font-size: 14px;
+            padding: 11px 2px;
+            font-size: 15px;
             border-bottom: 1px solid #f2f2f2;
         }
         .fx-row .cur { font-weight: 600; }
@@ -1253,11 +1283,11 @@
     <div class="view-toolbar" id="viewToolbar">
         <div class="menu-box" id="menuBox">
             <button class="menu-btn" onclick="toggleViewMenu(event)">☰ Menu <span class="caret">▾</span></button>
-            <div class="menu-list" id="menuList">
-                <div class="menu-item" onclick="openMapModal()"><span class="mi-ico">🗺️</span>Map</div>
-                <div class="menu-item" onclick="openFxModal()"><span class="mi-ico">💱</span>Exchange Rate</div>
-                <div class="menu-item" onclick="openFilters()"><span class="mi-ico">⚙️</span>Filters</div>
-            </div>
+        </div>
+        <div class="menu-tiles" id="menuTiles">
+            <div class="tile" onclick="openMapModal()"><span class="t-ico">🗺️</span>Map</div>
+            <div class="tile" onclick="openFxModal()"><span class="t-ico">💱</span>Exchange Rate</div>
+            <div class="tile" onclick="openFilters()"><span class="t-ico">⚙️</span>Filters</div>
         </div>
     </div>
 
@@ -1532,6 +1562,7 @@
     <div class="fx-modal" id="fxModal" onclick="if(event.target===this)closeFxModal()">
         <div class="fx-box">
             <div class="fx-head"><span>💱 Exchange Rate</span><button onclick="closeFxModal()">Close</button></div>
+            <div class="fx-chips" id="fxChips"></div>
             <div id="fxList"></div>
             <div class="fx-note" id="fxNote"></div>
         </div>
@@ -2167,19 +2198,20 @@
             document.getElementById('qrModal').classList.add('active');
         }
 
-        // ===== View menu: Map + Exchange Rate =====
+        // ===== View menu: Map + Exchange Rate + Filters =====
         function toggleViewMenu(e) {
             if (e) e.stopPropagation();
-            document.getElementById('menuList').classList.toggle('open');
+            document.getElementById('menuTiles').classList.toggle('open');
         }
 
         function closeViewMenu() {
-            document.getElementById('menuList').classList.remove('open');
+            const t = document.getElementById('menuTiles');
+            if (t) t.classList.remove('open');
         }
 
         document.addEventListener('click', (ev) => {
-            const box = document.getElementById('menuBox');
-            if (box && !box.contains(ev.target)) closeViewMenu();
+            const bar = document.getElementById('viewToolbar');
+            if (bar && !bar.contains(ev.target)) closeViewMenu();
         });
 
         function openMapModal() {
@@ -2193,6 +2225,67 @@
             document.getElementById('mapModal').classList.remove('active');
         }
 
+        // Exchange rate: interchangeable base + sats (⚡), cached 5 min
+        let fxRates = null;
+        let fxBase = 'USD';
+        const FX_ORDER = ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'KRW', 'CAD', 'SATS'];
+        const FX_SYM = { USD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', KRW: '₩', CAD: '$', SATS: '⚡' };
+
+        async function fxLoad() {
+            if (fxRates && Date.now() - fxRates.ts < 300000) return fxRates;
+            const res = await fetch('https://open.er-api.com/v6/latest/USD');
+            const d = await res.json();
+            const rates = d.rates || {};
+            // BTC isn't on open.er-api — pull USD spot from CoinGecko (best effort)
+            try {
+                const bres = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+                const bd = await bres.json();
+                if (bd.bitcoin && bd.bitcoin.usd) rates.BTC = bd.bitcoin.usd;
+            } catch (e) { /* sats rows will hide */ }
+            fxRates = { ts: Date.now(), r: rates };
+            return fxRates;
+        }
+
+        function fxToUsd(cur) {
+            const r = fxRates.r;
+            if (cur === 'USD') return 1;
+            if (cur === 'SATS') return r.BTC / 1e8;
+            return 1 / r[cur];
+        }
+
+        function fxFromUsd(v, tgt) {
+            const r = fxRates.r;
+            if (tgt === 'USD') return v;
+            if (tgt === 'SATS') return v / (r.BTC / 1e8);
+            return v * r[tgt];
+        }
+
+        function fxFmt(v) {
+            if (v >= 1000) return Math.round(v).toLocaleString();
+            if (v >= 1) return v.toFixed(2);
+            return v.toPrecision(4);
+        }
+
+        function renderFx() {
+            const hasSat = !!fxRates.r.BTC;
+            const chips = document.getElementById('fxChips');
+            chips.innerHTML = FX_ORDER.filter(c => c !== 'SATS' || hasSat).map(c =>
+                `<span class="fx-chip${c === fxBase ? ' active' : ''}" onclick="setFxBase('${c}')">${c === 'SATS' ? '⚡ sats' : c + ' ' + FX_SYM[c]}</span>`
+            ).join('');
+            const list = document.getElementById('fxList');
+            const base = (fxBase === 'SATS' && !hasSat) ? 'USD' : fxBase;
+            const usd = fxToUsd(base);
+            list.innerHTML = FX_ORDER.filter(t => t !== base && (t !== 'SATS' || hasSat)).map(t =>
+                `<div class="fx-row"><span class="cur">1 ${base === 'SATS' ? 'sat' : base} → ${t === 'SATS' ? '⚡ sats' : t + ' ' + FX_SYM[t]}</span><span class="val">${fxFmt(fxFromUsd(usd, t))}</span></div>`
+            ).join('');
+            document.getElementById('fxNote').textContent = 'Updated ' + new Date(fxRates.ts).toLocaleTimeString();
+        }
+
+        function setFxBase(c) {
+            fxBase = c;
+            renderFx();
+        }
+
         async function openFxModal() {
             closeViewMenu();
             const modal = document.getElementById('fxModal');
@@ -2202,17 +2295,8 @@
             list.innerHTML = '<div class="fx-row"><span class="cur">Loading…</span></div>';
             note.textContent = '';
             try {
-                const res = await fetch('https://open.er-api.com/v6/latest/USD');
-                const data = await res.json();
-                const r = data.rates || {};
-                const rows = [
-                    ['CNY ¥', r.CNY], ['EUR €', r.EUR], ['GBP £', r.GBP],
-                    ['JPY ¥', r.JPY], ['KRW ₩', r.KRW], ['CAD $', r.CAD]
-                ].filter(x => x[1]);
-                list.innerHTML = rows.map(x =>
-                    `<div class="fx-row"><span class="cur">1 USD → ${x[0]}</span><span class="val">${x[1].toFixed(x[1] > 100 ? 0 : 2)}</span></div>`
-                ).join('');
-                note.textContent = 'Updated ' + new Date().toLocaleTimeString();
+                await fxLoad();
+                renderFx();
             } catch (err) {
                 list.innerHTML = '<div class="fx-row"><span class="cur">Unavailable offline</span></div>';
                 note.textContent = 'Could not reach the rate service.';
