@@ -751,18 +751,22 @@
 
         /* View menu toolbar (Map / Exchange Rate) */
         .view-toolbar {
-            padding: 10px 16px;
+            padding: 10px 0 10px 16px;
             background: white;
             border-bottom: 1px solid #eee;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-end;
+            display: block;
+            position: relative;
         }
 
-        .menu-box {
-            width: 100%;
-            display: flex;
-            justify-content: flex-end;
+        .view-toolbar::after {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 10px;
+            bottom: 10px;
+            width: 26px;
+            background: linear-gradient(transparent, #fff 75%);
+            pointer-events: none;
         }
 
         .menu-btn {
@@ -779,16 +783,21 @@
         .menu-btn .caret { font-size: 10px; color: var(--text-muted); }
 
         .menu-tiles {
-            display: none;
-            width: 100%;
+            display: flex;
             gap: 10px;
-            margin-top: 10px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x proximity;
+            padding-right: 26px;
         }
 
-        .menu-tiles.open { display: flex; }
+        .menu-tiles::-webkit-scrollbar { display: none; }
 
         .tile {
-            flex: 1;
+            flex: 0 0 auto;
+            scroll-snap-align: start;
+            width: 118px;
             border: 1.5px solid #e2e2e2;
             border-radius: 12px;
             background: #fff;
@@ -801,10 +810,12 @@
             font-weight: 600;
             color: var(--text-dark);
             cursor: pointer;
-            transition: border-color .15s, background .15s;
+            transition: border-color .15s, background .15s, transform .1s;
         }
 
         .tile:hover { border-color: var(--primary-red); background: #fff5f5; color: var(--primary-red); }
+
+        .tile:active { transform: scale(.96); }
 
         .t-ico { font-size: 20px; }
 
@@ -1279,15 +1290,14 @@
         </div>
     </div>
 
-    <!-- View menu bar (replaces sort dropdown) -->
+    <!-- Conveyor-belt option rail (always visible, swipe/scroll sideways) -->
     <div class="view-toolbar" id="viewToolbar">
-        <div class="menu-box" id="menuBox">
-            <button class="menu-btn" onclick="toggleViewMenu(event)">☰ Menu <span class="caret">▾</span></button>
-        </div>
         <div class="menu-tiles" id="menuTiles">
             <div class="tile" onclick="openMapModal()"><span class="t-ico">🗺️</span>Map</div>
             <div class="tile" onclick="openFxModal()"><span class="t-ico">💱</span>Exchange Rate</div>
             <div class="tile" onclick="openFilters()"><span class="t-ico">⚙️</span>Filters</div>
+            <div class="tile" onclick="navigateTo('search')"><span class="t-ico">🔎</span>Search</div>
+            <div class="tile" onclick="setShuffleSort()"><span class="t-ico">🎻</span>Surprise Me</div>
         </div>
     </div>
 
@@ -1956,7 +1966,7 @@
             const catStrip = document.getElementById('catStrip');
             if (page === 'discover' || page === 'search') {
                 searchContainer.style.display = 'block';
-                viewToolbar.style.display = 'flex';
+                viewToolbar.style.display = "block";
             } else {
                 searchContainer.style.display = 'none';
                 viewToolbar.style.display = 'none';
@@ -2198,21 +2208,14 @@
             document.getElementById('qrModal').classList.add('active');
         }
 
-        // ===== View menu: Map + Exchange Rate + Filters =====
-        function toggleViewMenu(e) {
-            if (e) e.stopPropagation();
-            document.getElementById('menuTiles').classList.toggle('open');
-        }
+        // ===== Conveyor rail: Map / Exchange Rate / Filters =====
+        function closeViewMenu() { /* rail is always visible; kept for call-site compatibility */ }
 
-        function closeViewMenu() {
-            const t = document.getElementById('menuTiles');
-            if (t) t.classList.remove('open');
+        function setShuffleSort() {
+            currentSort = (currentSort === 'shuffle') ? 'comprehensive' : 'shuffle';
+            renderRestaurants();
+            renderReviews();
         }
-
-        document.addEventListener('click', (ev) => {
-            const bar = document.getElementById('viewToolbar');
-            if (bar && !bar.contains(ev.target)) closeViewMenu();
-        });
 
         function openMapModal() {
             closeViewMenu();
@@ -2359,6 +2362,7 @@
 
         function sortRestaurants(list) {
             const sorted = [...list];
+            if (currentSort === 'shuffle') return sorted.sort(() => Math.random() - 0.5);
             switch (currentSort) {
                 case 'taste':
                     sorted.sort((a, b) => b.avgTaste - a.avgTaste);
