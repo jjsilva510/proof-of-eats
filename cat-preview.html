@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spacing options</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background:#fafafa; margin:0; padding:28px; color:#333; }
+  h1 { font-size:16px; margin:0 0 4px; color:#c00; }
+  .note { font-size:12px; color:#888; margin:0 0 22px; }
+  .row-head { font-size:14px; font-weight:700; margin:22px 0 10px; }
+  .row-head small { color:#888; font-weight:500; }
+  .cat-strip { display:flex; overflow-x:auto; padding:16px 20px; background:#fff; border-radius:12px; border:1px solid #eee; }
+  .cat-item { flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; }
+  .cat-icon { width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px; border:2px solid rgba(0,0,0,0.05); }
+  .cat-item:nth-child(1) .cat-icon { background:#fff1f0; border-color:#e0342a; }
+  .cat-item:nth-child(2) .cat-icon { background:#fff3e0; }
+  .cat-item:nth-child(3) .cat-icon { background:#e3f2fd; }
+  .cat-item:nth-child(4) .cat-icon { background:#f3e5f5; }
+  .cat-item:nth-child(5) .cat-icon { background:#e0f2f1; }
+  .cat-item:nth-child(6) .cat-icon { background:#fce4ec; }
+  .cat-label { font-size:12px; color:#666; font-weight:600; }
+</style>
+</head>
+<body>
+<h1>Pastel circles — 5 spacing options</h1>
+<p class="note">Each row = same 64px pastel icon, different gap between items</p>
+
+<div class="row-head">A · 18px <small>cozy</small></div>
+<div class="cat-strip" style="gap:18px;">
+  <div class="cat-item"><div class="cat-icon">🌐</div><div class="cat-label">All</div></div>
+  <div class="cat-item"><div class="cat-icon">🍜</div><div class="cat-label">Food</div></div>
+  <div class="cat-item"><div class="cat-icon">🍺</div><div class="cat-label">Bars</div></div>
+  <div class="cat-item"><div class="cat-icon">💎</div><div class="cat-label">Luxury</div></div>
+  <div class="cat-item"><div class="cat-icon">🗽</div><div class="cat-label">Sightseeing</div></div>
+  <div class="cat-item"><div class="cat-icon">🎡</div><div class="cat-label">Local Fun</div></div>
+</div>
+
+<div class="row-head">B · 30px <small>comfortable</small></div>
+<div class="cat-strip" style="gap:30px;">
+  <div class="cat-item"><div class="cat-icon">🌐</div><div class="cat-label">All</div></div>
+  <div class="cat-item"><div class="cat-icon">🍜</div><div class="cat-label">Food</div></div>
+  <div class="cat-item"><div class="cat-icon">🍺</div><div class="cat-label">Bars</div></div>
+  <div class="cat-item"><div class="cat-icon">💎</div><div class="cat-label">Luxury</div></div>
+  <div class="cat-item"><div class="cat-icon">🗽</div><div class="cat-label">Sightseeing</div></div>
+  <div class="cat-item"><div class="cat-icon">🎡</div><div class="cat-label">Local Fun</div></div>
+</div>
+
+<div class="row-head">C · 44px <small>airy (current)</small></div>
+<div class="cat-strip" style="gap:44px;">
+  <div class="cat-item"><div class="cat-icon">🌐</div><div class="cat-label">All</div></div>
+  <div class="cat-item"><div class="cat-icon">🍜</div><div class="cat-label">Food</div></div>
+  <div class="cat-item"><div class="cat-icon">🍺</div><div class="cat-label">Bars</div></div>
+  <div class="cat-item"><div class="cat-icon">💎</div><div class="cat-label">Luxury</div></div>
+  <div class="cat-item"><div class="cat-icon">🗽</div><div class="cat-label">Sightseeing</div></div>
+  <div class="cat-item"><div class="cat-icon">🎡</div><div class="cat-label">Local Fun</div></div>
+</div>
+
+<div class="row-head">D · 60px <small>spread</small></div>
+<div class="cat-strip" style="gap:60px;">
+  <div class="cat-item"><div class="cat-icon">🌐</div><div class="cat-label">All</div></div>
+  <div class="cat-item"><div class="cat-icon">🍜</div><div class="cat-label">Food</div></div>
+  <div class="cat-item"><div class="cat-icon">🍺</div><div class="cat-label">Bars</div></div>
+  <div class="cat-item"><div class="cat-icon">💎</div><div class="cat-label">Luxury</div></div>
+  <div class="cat-item"><div class="cat-icon">🗽</div><div class="cat-label">Sightseeing</div></div>
+  <div class="cat-item"><div class="cat-icon">🎡</div><div class="cat-label">Local Fun</div></div>
+</div>
+
+<div class="row-head">E · 80px <small>wide</small></div>
+<div class="cat-strip" style="gap:80px;">
+  <div class="cat-item"><div class="cat-icon">🌐</div><div class="cat-label">All</div></div>
+  <div class="cat-item"><div class="cat-icon">🍜</div><div class="cat-label">Food</div></div>
+  <div class="cat-item"><div class="cat-icon">🍺</div><div class="cat-label">Bars</div></div>
+  <div class="cat-item"><div class="cat-icon">💎</div><div class="cat-label">Luxury</div></div>
+  <div class="cat-item"><div class="cat-icon">🗽</div><div class="cat-label">Sightseeing</div></div>
+  <div class="cat-item"><div class="cat-icon">🎡</div><div class="cat-label">Local Fun</div></div>
+</div>
+
+</body>
+</html>
