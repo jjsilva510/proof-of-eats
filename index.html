@@ -1303,6 +1303,10 @@
 
     <!-- Discover Page -->
     <div class="page active" id="discoverPage">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 8px;font-size:12px;color:#888;">
+            <span id="relaySyncStatus">tap to sync live reviews</span>
+            <button onclick="refreshLiveReviews(document.getElementById('relaySyncStatus'))" style="background:#fff;color:var(--primary-red);border:1px solid var(--primary-red);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;">⟳ Sync from relays</button>
+        </div>
         <div id="restaurantList"></div>
         <div id="reviewList"></div>
     </div>
@@ -1947,6 +1951,8 @@
             renderReviews();
             populateRestaurantSelect();
             initAuth();
+            // Fold in real reviews from the relays (non-blocking; demo data stays until events arrive).
+            refreshLiveReviews(document.getElementById('relaySyncStatus'));
         });
 
         // Navigation
@@ -2899,6 +2905,121 @@
                 return NostrTools.finalizeEvent(template, hexToBytes(embeddedNsec));
             }
             throw new Error('No active identity');
+        }
+
+        // ===== Relay READ path (NIP-01 REQ) =====
+        // Raw-WebSocket fetch of kind-1985 review events. Works without the
+        // nostr-tools CDN bundle (same transport as publishToRelays). Dedupes
+        // by event id across relays; per-relay failures are non-fatal.
+        const REVIEW_KIND = 1985;
+        const _seenEventIds = new Set();
+
+        function decodeReviewEvent(ev) {
+            // Map a stored kind-1985 event back onto the app's review shape.
+            try {
+                const tag = (name) => (ev.tags || []).find(t => t[0] === name);
+                const tagVal = (name, cls) => (ev.tags || []).filter(t =>
+                    t[0] === 'l' && t[2] === cls).map(t => parseFloat(t[1]))[0];
+                const aTag = tag('a');
+                if (!aTag) return null;
+                const restaurantId = aTag[1].split(':')[2];
+                if (!restaurantId) return null;
+                const taste = tagVal('l', 'com.proofofeat.taste');
+                const environ = tagVal('l', 'com.proofofeat.environment');
+                const service = tagVal('l', 'com.proofofeat.service');
+                const price = tagVal('l', 'com.proofofeat.price');
+                if ([taste, environ, service, price].some(v => v === undefined || isNaN(v))) return null;
+                return {
+                    id: 'nostr-' + ev.id,
+                    eventId: ev.id,
+                    restaurantId,
+                    user: 'User ' + ev.pubkey.substring(0, 8),
+                    userPubkey: ev.pubkey,
+                    lud16: (tag('zap') || [])[1] || null,
+                    taste, environ, service, price,
+                    rating: Math.round((taste + environ + service) / 3 / 2),
+                    text: ev.content || '',
+                    photos: (ev.tags || []).filter(t => t[0] === 'image').map(t => t[1]),
+                    timestamp: (ev.created_at || 0) * 1000,
+                    likes: 0, comments: 0, zaps: 0
+                };
+            } catch (e) { return null; }
+        }
+
+        function queryRelays(relays, filters, timeoutMs = 8000) {
+            return Promise.all(relays.map(url => new Promise(resolve => {
+                let ws = null, done = false;
+                const out = [];
+                const finish = () => { if (done) return; done = true; clearTimeout(timer); try { if (ws) ws.close(); } catch (e) {} resolve(out); };
+                const timer = setTimeout(finish, timeoutMs);
+                try { ws = new WebSocket(url); } catch (e) { return resolve([]); }
+                ws.onopen = () => { try { ws.send(JSON.stringify(['REQ', 'read-1', filters])); } catch (e) { finish(); } };
+                ws.onmessage = (m) => {
+                    try {
+                        const msg = JSON.parse(m.data);
+                        if (msg[0] === 'EVENT' && msg[1] === 'read-1') out.push(msg[2]);
+                        if (msg[0] === 'EOSE') { try { ws.send(JSON.stringify(['CLOSE', 'read-1'])); } catch (e) {} setTimeout(finish, 400); }
+                        if (msg[0] === 'CLOSED') finish();
+                    } catch (e) {}
+                };
+                ws.onerror = finish;
+            })));
+        }
+
+        async function fetchReviewsFromRelays(opts = {}) {
+            // opts.restaurantId / opts.authors / opts.since -> NIP-01 filter map.
+            // The a-tag embeds the author hex, so without an author list we pull
+            // recent kind-1985 events and match the restaurant client-side.
+            const filters = { kinds: [REVIEW_KIND], limit: opts.limit || 200 };
+            if (opts.authors && opts.authors.length) {
+                filters.authors = opts.authors;
+                if (opts.restaurantId) filters['#a'] = opts.authors.map(a => `30023:${a}:${opts.restaurantId}`);
+            }
+            if (opts.since) filters.since = opts.since;
+            const results = await queryRelays(configuredRelays, filters);
+            const flat = results.flat();
+            let mapped = flat.map(decodeReviewEvent).filter(Boolean);
+            if (opts.restaurantId) mapped = mapped.filter(r => r.restaurantId === opts.restaurantId);
+            const fresh = [];
+            for (const rev of mapped) {
+                if (_seenEventIds.has(rev.eventId)) continue;
+                _seenEventIds.add(rev.eventId);
+                fresh.push(rev);
+            }
+            return fresh;
+        }
+
+        function mergeLiveReviews(live) {
+            if (!live.length) return 0;
+            let added = 0;
+            for (const rev of live) {
+                reviews.unshift(rev); added++;
+                const rest = restaurants.find(r => r.id === rev.restaurantId);
+                if (rest) {
+                    const all = reviews.filter(r => r.restaurantId === rev.restaurantId);
+                    rest.avgTaste = all.reduce((s, r) => s + r.taste, 0) / all.length;
+                    rest.avgEnviron = all.reduce((s, r) => s + r.environ, 0) / all.length;
+                    rest.avgService = all.reduce((s, r) => s + r.service, 0) / all.length;
+                    rest.avgPrice = all.reduce((s, r) => s + r.price, 0) / all.length;
+                    rest.checkins = all.length;
+                }
+            }
+            renderRestaurants();
+            renderReviews();
+            return added;
+        }
+
+        async function refreshLiveReviews(statusEl) {
+            // Pull from relays and fold into the feed. Called at startup and on demand.
+            if (statusEl) statusEl.textContent = 'syncing…';
+            try {
+                const live = await fetchReviewsFromRelays({ since: Math.floor(Date.now()/1000) - 30*86400 });
+                const n = mergeLiveReviews(live);
+                if (statusEl) statusEl.textContent = n > 0 ? `+${n} live review${n===1?'':'s'} from relays` : 'up to date';
+            } catch (e) {
+                if (statusEl) statusEl.textContent = 'relay sync failed';
+                console.warn('relay read failed:', e);
+            }
         }
 
         // Best-effort broadcast to relays over raw WebSocket (NIP-01)
