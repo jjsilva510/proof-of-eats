@@ -1,0 +1,15 @@
+{
+  "names": {
+    "jefizzle": "JPUBKEY_HEX_PLACEHOLDER",
+    "app": "JPUBKEY_HEX_PLACEHOLDER",
+    "grubseal": "JPUBKEY_HEX_PLACEHOLDER"
+  },
+  "relays": {
+    "JPUBKEY_HEX_PLACEHOLDER": [
+      "wss://relay.damus.io",
+      "wss://nos.lol",
+      "wss://relay.primal.net",
+      "wss://relay.snort.social"
+    ]
+  }
+}

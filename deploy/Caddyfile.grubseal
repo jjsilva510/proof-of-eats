@@ -1,0 +1,31 @@
+# GrubSeal — add to /etc/caddy/Caddyfile on the OVH VPS (root@89.147.111.140)
+# Requires: grubseal.com registered on Cloudflare, A @ + A www grey-clouded -> 89.147.111.140
+# TLS via Cloudflare DNS challenge (token already on the box, same pattern as chatto/livekit blocks).
+
+grubseal.com {
+	tls {
+		dns cloudflare CLOUDFLARE_TOKEN_PLACEHOLDER
+	}
+	root * /var/www/grubseal
+	encode gzip
+
+	# NIP-05 verification (must be served with permissive CORS)
+	@nip05 path /.well-known/nostr.json
+	handle @nip05 {
+		header Access-Control-Allow-Origin *
+		header Cache-Control "public, max-age=300"
+		file_server
+	}
+
+	# human-usable handle redirects
+	redir /jefizzle https://snort.social/p/JPUB_PLACEHOLDER permanent
+	redir /grubseal https://snort.social/p/JPUB_PLACEHOLDER permanent
+
+	handle {
+		file_server
+	}
+}
+
+www.grubseal.com {
+	redir https://grubseal.com{uri} permanent
+}
